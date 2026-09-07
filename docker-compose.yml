@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: holocron
+      POSTGRES_PASSWORD: holocron
+      POSTGRES_DB: holocron
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "holocron"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      PROCESS_ROLE: api
+      DATABASE_URL: postgres://holocron:holocron@postgres:5432/holocron
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - data:/data
+
+  worker:
+    build:
+      context: .
+      target: api
+    command: ["node", "dist/worker.js"]
+    environment:
+      PROCESS_ROLE: worker
+      DATABASE_URL: postgres://holocron:holocron@postgres:5432/holocron
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - data:/data
+    stop_grace_period: 60s
+
+  caddy:
+    build:
+      context: .
+      target: caddy
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  data:

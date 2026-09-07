@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+minimumReleaseAgeExclude:
+  - '@tanstack/history@1.162.2'
+  - '@tanstack/react-router@1.170.33'
+  - '@tanstack/router-core@1.171.28'
+  - '@tanstack/router-generator@1.167.34'
+  - '@tanstack/router-plugin@1.168.36'
