@@ -1,0 +1,29 @@
+{
+  "type": "contract",
+  "source": {
+    "kind": "cuad-v1",
+    "dataset": "The Atticus Project, CUAD v1",
+    "file": "CUAD_v1/full_contract_pdf/Part_II/Maintenance/NETZEEINC_11_14_2002-EX-10.3-MAINTENANCE AGREEMENT.PDF",
+    "licence": "CC BY 4.0",
+    "citation": "Hendrycks et al., \"CUAD: An Expert-Annotated NLP Dataset for Legal Contract Review\", 2021",
+    "note": "A public SEC filing (sec.gov). Signature block names corporate officers, which is public record. No agreement date and no governing law are stated, so those fields are deliberately unverifiable."
+  },
+  "fields": {
+    "title": { "value": "Maintenance Agreement", "page": 1, "quote": "MAINTENANCE AGREEMENT" },
+    "parties": [
+      { "value": "Netzee, Inc.", "page": 1, "quote": "NETZEE, INC." },
+      { "value": "The Bankers Bank", "page": 1, "quote": "Bankers Bank" }
+    ],
+    "effective_date": { "value": null, "page": null, "quote": null, "reason": "Not stated. The document only gives a commencement date for maintenance." },
+    "start_date": { "value": "2001-03-01", "page": 1, "quote": "MARCH 1, 2001" },
+    "end_date": { "value": null, "page": null, "quote": null, "reason": "Not stated as a date. The term is described as one year from the commencement date, not printed as an end date." },
+    "governing_law": { "value": null, "page": null, "quote": null, "reason": "Not stated. The agreement refers to a separate Master Agreement for its terms." },
+    "defined_terms": [{ "term": "Continued Service", "page": 1, "defined_quote": "provides for Continued Service", "used_quote": "The Continued Service provided by Netzee" }]
+  },
+  "checks": [
+    { "name": "effective date on or before start date", "result": "not_applicable", "message": "No effective date is printed." },
+    { "name": "start date before end date", "result": "not_applicable", "message": "No end date is printed." },
+    { "name": "every party named in the opening appears in the signature block", "result": "pass" },
+    { "name": "every defined term is used at least once after it is defined", "result": "pass" }
+  ]
+}

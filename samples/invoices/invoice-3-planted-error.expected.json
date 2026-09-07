@@ -1,0 +1,62 @@
+{
+  "type": "invoice",
+  "source": {
+    "kind": "generated",
+    "note": "Written for this project from samples/invoices/models.mjs. This is the planted-error sample: the toner line total is printed wrong, exactly like the review screen mockup at .scratch/holocron/design/review-screen/Main.dc.html."
+  },
+  "currency": "USD",
+  "fields": {
+    "vendor": { "value": "Acme Supplies", "page": 1, "quote": "Acme Supplies" },
+    "invoice_number": { "value": "1042", "page": 1, "quote": "1042" },
+    "issue_date": { "value": "2026-03-03", "page": 1, "quote": "3 Mar 2026" },
+    "due_date": { "value": "2026-04-02", "page": 1, "quote": "2 Apr 2026" },
+    "bill_to": { "value": "Luna Bakery LLC", "page": 1, "quote": "Luna Bakery LLC" },
+    "subtotal": { "value": 165.0, "page": 1, "quote": "165.00" },
+    "tax_amount": { "value": 16.5, "page": 1, "quote": "16.50" },
+    "total": { "value": 181.5, "page": 1, "quote": "181.50" }
+  },
+  "line_items": [
+    {
+      "description": "Copy paper, A4, box",
+      "quantity": 10,
+      "unit_price": 4.5,
+      "line_total": 45.0,
+      "page": 1,
+      "quote": "Copy paper, A4, box"
+    },
+    {
+      "description": "Toner cartridge, black",
+      "quantity": 2,
+      "unit_price": 60.0,
+      "line_total": 12.0,
+      "page": 1,
+      "quote": "Toner cartridge, black",
+      "planted_error": {
+        "printed_line_total": 12.0,
+        "correct_line_total": 120.0,
+        "reason": "2 times 60.00 should print as 120.00. The page prints 12.00 instead."
+      }
+    }
+  ],
+  "checks": [
+    {
+      "name": "line quantity times price equals line total",
+      "result": "fail",
+      "line": "Toner cartridge, black",
+      "blames": "toner line total",
+      "involves": ["toner quantity", "toner unit price"],
+      "message": "2 x 60.00 should be 120.00, but the line prints 12.00."
+    },
+    {
+      "name": "sum of line totals equals subtotal",
+      "result": "fail",
+      "blames": "subtotal",
+      "involves": ["paper line total", "toner line total"],
+      "message": "The lines add up to 57.00, not the 165.00 subtotal."
+    },
+    { "name": "subtotal plus tax minus discount equals total", "result": "pass" },
+    { "name": "issue date on or before due date", "result": "pass" },
+    { "name": "one currency throughout", "result": "pass" },
+    { "name": "invoice number present", "result": "pass" }
+  ]
+}

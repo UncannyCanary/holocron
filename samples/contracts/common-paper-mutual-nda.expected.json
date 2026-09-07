@@ -1,0 +1,28 @@
+{
+  "type": "contract",
+  "source": {
+    "kind": "common-paper",
+    "template": "Common Paper Mutual NDA, Version 1.0",
+    "repo": "github.com/CommonPaper/Mutual-NDA",
+    "licence": "CC BY 4.0",
+    "note": "Cover page filled in by us with fictional companies and people. Zero real personal data. Standard Terms on pages 2-3 are copied verbatim from the template."
+  },
+  "fields": {
+    "title": { "value": "Mutual Non-Disclosure Agreement", "page": 1, "quote": "Mutual Non-Disclosure Agreement" },
+    "parties": [
+      { "value": "Nimbus Analytics, Inc.", "page": 1, "quote": "Nimbus Analytics, Inc." },
+      { "value": "Cobalt Field Robotics LLC", "page": 1, "quote": "Cobalt Field Robotics LLC" }
+    ],
+    "effective_date": { "value": "2026-02-01", "page": 1, "quote": "1 Feb 2026" },
+    "start_date": { "value": "2026-02-01", "page": 1, "quote": "1 Feb 2026", "reason": "The MNDA has one Effective Date, which also serves as the start date." },
+    "end_date": { "value": "2028-02-01", "page": 1, "quote": "1 Feb 2028" },
+    "governing_law": { "value": "Delaware", "page": 1, "quote": "Delaware" },
+    "defined_terms": [{ "term": "Confidential Information", "page": 2, "defined_quote": "(\"Confidential Information\")", "used_quote": "protect Confidential Information" }]
+  },
+  "checks": [
+    { "name": "effective date on or before start date", "result": "pass" },
+    { "name": "start date before end date", "result": "pass" },
+    { "name": "every party named in the opening appears in the signature block", "result": "pass", "message": "Both companies appear once, in the Company row of the signature block, since a Common Paper cover page has no separate opening paragraph." },
+    { "name": "every defined term is used at least once after it is defined", "result": "pass" }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "type": "invoice",
+  "source": {
+    "kind": "generated",
+    "note": "Written for this project from samples/invoices/models.mjs. No planted error, all checks pass. Uses GBP and no discount, for variety against invoice-1."
+  },
+  "currency": "GBP",
+  "fields": {
+    "vendor": { "value": "Northlake Hardware Co.", "page": 1, "quote": "Northlake Hardware Co." },
+    "invoice_number": { "value": "NH-5588", "page": 1, "quote": "NH-5588" },
+    "issue_date": { "value": "2026-05-06", "page": 1, "quote": "6 May 2026" },
+    "due_date": { "value": "2026-05-20", "page": 1, "quote": "20 May 2026" },
+    "bill_to": { "value": "Ferro & Sons Builders", "page": 1, "quote": "Ferro & Sons Builders" },
+    "subtotal": { "value": 114.85, "page": 1, "quote": "114.85" },
+    "tax_amount": { "value": 22.97, "page": 1, "quote": "22.97" },
+    "total": { "value": 137.82, "page": 1, "quote": "137.82" }
+  },
+  "line_items": [
+    {
+      "description": "Galvanised screws, 4mm, box of 200",
+      "quantity": 6,
+      "unit_price": 3.2,
+      "line_total": 19.2,
+      "page": 1,
+      "quote": "Galvanised screws, 4mm, box of 200"
+    },
+    {
+      "description": "Timber batten, 2.4m",
+      "quantity": 15,
+      "unit_price": 4.75,
+      "line_total": 71.25,
+      "page": 1,
+      "quote": "Timber batten, 2.4m"
+    },
+    {
+      "description": "Exterior wood glue, 500ml",
+      "quantity": 4,
+      "unit_price": 6.1,
+      "line_total": 24.4,
+      "page": 1,
+      "quote": "Exterior wood glue, 500ml"
+    }
+  ],
+  "checks": [
+    { "name": "line quantity times price equals line total", "result": "pass" },
+    { "name": "sum of line totals equals subtotal", "result": "pass" },
+    { "name": "subtotal plus tax minus discount equals total", "result": "pass" },
+    { "name": "issue date on or before due date", "result": "pass" },
+    { "name": "one currency throughout", "result": "pass" },
+    { "name": "invoice number present", "result": "pass" }
+  ]
+}

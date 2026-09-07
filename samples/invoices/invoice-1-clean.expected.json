@@ -1,0 +1,45 @@
+{
+  "type": "invoice",
+  "source": {
+    "kind": "generated",
+    "note": "Written for this project from samples/invoices/models.mjs. No planted error, all checks pass."
+  },
+  "currency": "USD",
+  "fields": {
+    "vendor": { "value": "Cedar & Finch Design Studio", "page": 1, "quote": "Cedar & Finch Design Studio" },
+    "invoice_number": { "value": "CF-2031", "page": 1, "quote": "CF-2031" },
+    "issue_date": { "value": "2026-01-12", "page": 1, "quote": "12 Jan 2026" },
+    "due_date": { "value": "2026-02-11", "page": 1, "quote": "11 Feb 2026" },
+    "bill_to": { "value": "Marrow Coffee Roasters", "page": 1, "quote": "Marrow Coffee Roasters" },
+    "subtotal": { "value": 3450.0, "page": 1, "quote": "3450.00" },
+    "discount": { "value": 150.0, "page": 1, "quote": "-150.00" },
+    "tax_amount": { "value": 272.25, "page": 1, "quote": "272.25" },
+    "total": { "value": 3572.25, "page": 1, "quote": "3572.25" }
+  },
+  "line_items": [
+    {
+      "description": "Brand identity package",
+      "quantity": 1,
+      "unit_price": 2400.0,
+      "line_total": 2400.0,
+      "page": 1,
+      "quote": "Brand identity package"
+    },
+    {
+      "description": "Packaging design, 3 SKUs",
+      "quantity": 3,
+      "unit_price": 350.0,
+      "line_total": 1050.0,
+      "page": 1,
+      "quote": "Packaging design, 3 SKUs"
+    }
+  ],
+  "checks": [
+    { "name": "line quantity times price equals line total", "result": "pass" },
+    { "name": "sum of line totals equals subtotal", "result": "pass" },
+    { "name": "subtotal plus tax minus discount equals total", "result": "pass" },
+    { "name": "issue date on or before due date", "result": "pass" },
+    { "name": "one currency throughout", "result": "pass" },
+    { "name": "invoice number present", "result": "pass" }
+  ]
+}

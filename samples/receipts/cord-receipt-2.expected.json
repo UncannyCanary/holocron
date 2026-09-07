@@ -1,0 +1,27 @@
+{
+  "type": "receipt",
+  "source": {
+    "kind": "cord-v2",
+    "dataset": "naver-clova-ix/cord-v2",
+    "split": "test",
+    "row": 2,
+    "licence": "CC BY 4.0",
+    "citation": "Park et al., \"CORD: A Consolidated Receipt Dataset for Post-OCR Parsing\", Document Intelligence Workshop at NeurIPS 2019",
+    "note": "Store name, address and phone are blurred by the dataset authors. A hand casts a shadow across the middle of the receipt but nothing identifying is legible. No decimal currency (Indonesian rupiah)."
+  },
+  "currency": "IDR",
+  "fields": {
+    "subtotal": { "value": 28000, "page": 1, "quote": "28,000" },
+    "total": { "value": 28000, "page": 1, "quote": "28,000" },
+    "cash": { "value": 100000, "page": 1, "quote": "100,000" },
+    "change": { "value": 72000, "page": 1, "quote": "72,000" }
+  },
+  "line_items": [
+    { "description": "JASMINE MT ( L )", "quantity": 1, "line_total": 24000, "page": 1, "quote": "24,000" },
+    { "description": "COCONUT JELLY ( L )", "line_total": 4000, "page": 1, "quote": "4,000" }
+  ],
+  "checks": [
+    { "name": "sum of line totals equals subtotal", "result": "pass", "message": "24,000 + 4,000 = 28,000." },
+    { "name": "cash tendered minus total equals change", "result": "pass", "message": "100,000 - 28,000 = 72,000." }
+  ]
+}
