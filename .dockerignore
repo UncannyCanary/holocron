@@ -8,3 +8,7 @@ dist
 .scratch
 docs
 samples
+docker-compose.prod.yml
+Caddyfile.prod
+deploy.sh
+backup.sh

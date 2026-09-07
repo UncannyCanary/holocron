@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: holocron
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: holocron
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Also mounted here so the nightly backup script can write into it.
+      - data:/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "holocron"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      target: api
+    restart: unless-stopped
+    environment:
+      PROCESS_ROLE: api
+      DATABASE_URL: postgres://holocron:${POSTGRES_PASSWORD}@postgres:5432/holocron
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - data:/data
+
+  worker:
+    build:
+      context: .
+      target: api
+    command: ["node", "dist/worker.js"]
+    restart: unless-stopped
+    environment:
+      PROCESS_ROLE: worker
+      DATABASE_URL: postgres://holocron:${POSTGRES_PASSWORD}@postgres:5432/holocron
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - data:/data
+    stop_grace_period: 60s
+
+  caddy:
+    build:
+      context: .
+      target: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Overrides the dev Caddyfile baked into the image with the real domain and HTTPS.
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  data:
+  caddy_data:
+  caddy_config:
