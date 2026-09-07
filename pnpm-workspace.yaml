@@ -1,6 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+allowBuilds:
+  esbuild: true
 minimumReleaseAgeExclude:
   - '@tanstack/history@1.162.2'
   - '@tanstack/react-router@1.170.33'
