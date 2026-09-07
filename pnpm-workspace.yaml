@@ -3,6 +3,8 @@ packages:
   - "packages/*"
 allowBuilds:
   esbuild: true
+  sharp: false
+  tesseract.js: false
 minimumReleaseAgeExclude:
   - '@tanstack/history@1.162.2'
   - '@tanstack/react-router@1.170.33'
