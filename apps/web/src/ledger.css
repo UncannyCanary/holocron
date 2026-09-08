@@ -6,7 +6,7 @@
 
 @theme {
   --font-sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", "SF Mono", Menlo, monospace;
 
   /* Paper and panels, from the page ground to a raised card. */

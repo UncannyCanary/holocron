@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { DEFAULT_FILTERS } from '../lib/table-query';
 import { Kbd } from './Kbd';
+import { Logo } from './Logo';
 
 // The bar every screen shares: the wordmark, a breadcrumb for where the
 // screen sits, and whatever actions that screen needs on the right, before
@@ -9,7 +11,11 @@ export function TopBar({ breadcrumb, actions }: { breadcrumb?: string; actions?:
   return (
     <header className="flex h-14 items-center justify-between border-b border-line px-5">
       <div className="flex items-center gap-2.5">
-        <Link to="/" className="font-serif text-[22px] leading-none text-ink no-underline">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 font-serif text-[22px] leading-none text-ink no-underline"
+        >
+          <Logo />
           Holocron
         </Link>
         {breadcrumb && (
@@ -21,9 +27,22 @@ export function TopBar({ breadcrumb, actions }: { breadcrumb?: string; actions?:
       </div>
       <div className="flex items-center gap-3.5">
         {actions}
-        <Link to="/settings" className="text-note">
-          Settings
-        </Link>
+        <nav className="flex items-center gap-3.5 text-note">
+          <Link to="/queue" className="no-underline" activeProps={{ className: 'text-ink' }}>
+            Queue
+          </Link>
+          <Link
+            to="/table"
+            search={DEFAULT_FILTERS}
+            className="no-underline"
+            activeProps={{ className: 'text-ink' }}
+          >
+            Table
+          </Link>
+          <Link to="/settings" className="no-underline" activeProps={{ className: 'text-ink' }}>
+            Settings
+          </Link>
+        </nav>
         <span className="hint">
           <Kbd>?</Kbd>Shortcuts
         </span>

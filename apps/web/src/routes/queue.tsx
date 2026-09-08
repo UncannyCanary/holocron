@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { DocumentBadge, DocumentDot } from '../components/DocumentState';
 import { Kbd } from '../components/Kbd';
@@ -90,24 +90,9 @@ function QueuePage() {
       breadcrumb="Queue"
       hints={HINTS}
       actions={
-        <>
-          <div className="inline-flex overflow-hidden rounded-md border border-line-strong bg-card">
-            <span className="inline-flex h-8 items-center bg-ink px-3.5 text-note font-medium text-paper">
-              Queue
-            </span>
-            <Link
-              to="/table"
-              search={DEFAULT_FILTERS}
-              className="inline-flex h-8 items-center gap-1.5 px-3.5 text-note font-medium text-ink-soft no-underline"
-            >
-              Table<Kbd>G</Kbd>
-              <Kbd>T</Kbd>
-            </Link>
-          </div>
-          <button type="button" className="btn" onClick={() => navigate({ to: '/' })}>
-            Upload<Kbd>U</Kbd>
-          </button>
-        </>
+        <button type="button" className="btn" onClick={() => navigate({ to: '/' })}>
+          Upload<Kbd>U</Kbd>
+        </button>
       }
     >
       <div className="px-5 pt-6.5 pb-4">

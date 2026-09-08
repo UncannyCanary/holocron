@@ -1,5 +1,5 @@
 import type { DocumentType } from '@holocron/shared';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { createColumnHelper, flexRender, tableFeatures, useTable } from '@tanstack/react-table';
 import { type ReactNode, useRef, useState } from 'react';
 import { DocumentBadge, DocumentDot } from '../components/DocumentState';
@@ -263,24 +263,7 @@ function TablePage() {
     filters.vendor !== null;
 
   return (
-    <Screen
-      breadcrumb="Table"
-      hints={HINTS}
-      actions={
-        <div className="inline-flex overflow-hidden rounded-md border border-line-strong bg-card">
-          <Link
-            to="/queue"
-            className="inline-flex h-8 items-center gap-1.5 px-3.5 text-note font-medium text-ink-soft no-underline"
-          >
-            Queue<Kbd>G</Kbd>
-            <Kbd>Q</Kbd>
-          </Link>
-          <span className="inline-flex h-8 items-center bg-ink px-3.5 text-note font-medium text-paper">
-            Table
-          </span>
-        </div>
-      }
-    >
+    <Screen breadcrumb="Table" hints={HINTS}>
       <div className="flex items-end justify-between px-5 pt-6.5 pb-4">
         <div>
           <h1 className="font-serif text-title font-normal">All documents</h1>

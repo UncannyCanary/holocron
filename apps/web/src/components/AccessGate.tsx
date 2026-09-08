@@ -2,13 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
 import { ensureWorkspace, getDoorStatus, messageOf, unlockDoor } from '../lib/api';
+import { Logo } from './Logo';
 
 // Sits above every route. Nothing past it renders until the door is passed
 // and this browser has a workspace, so no screen has to check for either
 // itself.
 export function AccessGate({ children }: { children: ReactNode }) {
   const door = useQuery({ queryKey: ['door'], queryFn: getDoorStatus });
-  const reopening = useLocation({ select: (location) => location.pathname }).startsWith('/reopen/');
+  const reopening = useLocation({
+    select: (location) => location.pathname,
+  }).startsWith('/reopen/');
 
   if (door.isPending) {
     return null;
@@ -37,7 +40,10 @@ function DoorScreen() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-5 p-5">
-      <span className="font-serif text-[28px]">Holocron</span>
+      <div className="flex flex-col items-center gap-3">
+        <Logo size={44} />
+        <span className="font-serif text-[28px]">Holocron</span>
+      </div>
       <form
         className="flex w-[280px] flex-col gap-2.5"
         onSubmit={(event) => {
@@ -45,7 +51,7 @@ function DoorScreen() {
           unlock.mutate(code);
         }}
       >
-        <label htmlFor="access-code" className="text-note text-ink-soft">
+        <label htmlFor="access-code" className="text-note text-ink-soft text-center">
           Enter the access code to continue.
         </label>
         <input
