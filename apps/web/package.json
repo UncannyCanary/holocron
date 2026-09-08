@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@holocron/shared": "workspace:*",
     "@tanstack/react-query": "5.102.8",
     "@tanstack/react-router": "1.170.33",
     "@tanstack/react-table": "9.2.4",
@@ -16,11 +17,14 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
     "@tanstack/router-plugin": "1.168.36",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "oxc-transform-react": "^0.148.0",
+    "tailwindcss": "4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.2"
   }

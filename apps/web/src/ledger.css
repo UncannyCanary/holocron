@@ -1,0 +1,157 @@
+/* The Ledger system: the type, spacing, and colour choices from
+   .scratch/holocron/design/, as Tailwind theme tokens. Every screen shares
+   this file so they read as one system instead of each inventing its own. */
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+
+  /* Paper and panels, from the page ground to a raised card. */
+  --color-paper: #f4efe6;
+  --color-card: #fbf8f2;
+  --color-card-raised: #fffdf9;
+  --color-panel: #faf7f1;
+  --color-panel-muted: #f3ede2;
+  --color-drop: #f8f4ec;
+  --color-hint-bar: #f0eae0;
+
+  /* Ink, from full strength to faint. */
+  --color-ink: #1c1917;
+  --color-ink-soft: #6b6259;
+  --color-ink-quiet: #8a8078;
+  --color-ink-faint: #a39887;
+  --color-crumb: #cfc5b5;
+
+  /* Lines. */
+  --color-line: #e2d9cb;
+  --color-line-strong: #d9d0c2;
+  --color-line-row: #ebe4d8;
+  --color-line-drop: #d0c5b3;
+
+  --color-link: #2f6f6a;
+  --color-link-hover: #1f4f4b;
+
+  /* The trust states and "still working": text, background, dot. */
+  --color-needs-review: #8a2f1f;
+  --color-needs-review-bg: #f3e3df;
+  --color-needs-review-dot: #a23b2a;
+  --color-needs-review-line: #e3c9c3;
+  --color-needs-review-ink: #5c4a45;
+  --color-mostly-verified: #8c5a12;
+  --color-mostly-verified-bg: #fbf6ef;
+  --color-mostly-verified-dot: #b7791f;
+  --color-verified: #2d5e44;
+  --color-verified-bg: #e6efe8;
+  --color-verified-dot: #3b7a57;
+  --color-working: #6b6259;
+  --color-working-bg: #eee9df;
+  --color-working-dot: #a39887;
+
+  /* A key cap drawn on a dark button. */
+  --color-kbd-dark: #2a2622;
+  --color-kbd-dark-ink: #d8cfc0;
+  --color-kbd-dark-line: #4a443c;
+
+  /* The type sizes the canvas uses that Tailwind does not ship. */
+  --text-display: 40px;
+  --text-display--line-height: 1.1;
+  --text-title: 30px;
+  --text-title--line-height: 1;
+  --text-lede: 15px;
+  --text-note: 13px;
+}
+
+@layer base {
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+  a {
+    @apply text-link hover:text-link-hover;
+  }
+}
+
+/* The handful of pieces that repeat on every screen. Anything used once is
+   written as utilities where it sits. */
+@layer components {
+  .caps {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-quiet;
+  }
+
+  .btn {
+    @apply inline-flex h-[34px] cursor-pointer items-center gap-2 rounded-md border border-line-strong bg-card px-3 text-note font-medium leading-none text-ink no-underline disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply border-ink bg-ink text-paper;
+  }
+
+  .badge {
+    @apply inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded px-2 text-xs font-medium leading-none tracking-[0.01em];
+  }
+  .badge-needs-review {
+    @apply bg-needs-review-bg text-needs-review;
+  }
+  .badge-mostly-verified {
+    @apply bg-mostly-verified-bg text-mostly-verified;
+  }
+  .badge-verified {
+    @apply bg-verified-bg text-verified;
+  }
+  .badge-working,
+  .badge-queued,
+  .badge-failed {
+    @apply bg-working-bg text-working;
+  }
+
+  .dot {
+    @apply inline-block size-2 flex-none rounded-full;
+  }
+  .dot-needs-review,
+  .dot-failed {
+    @apply bg-needs-review-dot;
+  }
+  .dot-mostly-verified {
+    @apply bg-mostly-verified-dot;
+  }
+  .dot-verified {
+    @apply bg-verified-dot;
+  }
+  .dot-working,
+  .dot-queued {
+    @apply bg-working-dot;
+  }
+
+  .kbd {
+    @apply rounded border border-line-strong bg-card px-[5px] py-[3px] font-mono text-[10.5px] font-medium leading-none text-ink-quiet;
+  }
+  .kbd-dark {
+    @apply border-kbd-dark-line bg-kbd-dark text-kbd-dark-ink;
+  }
+
+  .hint {
+    @apply inline-flex items-center gap-1.5 text-xs text-ink-quiet;
+  }
+
+  /* A segmented control built from real radio inputs, so the document type
+     picker stays keyboard and screen reader friendly. */
+  .type-picker {
+    @apply inline-flex overflow-hidden rounded-md border border-line-strong;
+  }
+  .type-picker label {
+    @apply relative block;
+  }
+  .type-picker input {
+    @apply absolute inset-0 m-0 cursor-pointer opacity-0;
+  }
+  .type-picker span {
+    @apply flex h-7 items-center bg-card px-2.5 text-[12.5px] font-medium leading-none text-ink;
+  }
+  .type-picker input:checked + span {
+    @apply bg-ink text-paper;
+  }
+  .type-picker input:focus-visible + span {
+    @apply outline-2 -outline-offset-2 outline-ink;
+  }
+}

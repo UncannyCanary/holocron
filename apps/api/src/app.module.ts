@@ -2,6 +2,7 @@ import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common
 import { CleanupModule } from './cleanup/cleanup.module.js';
 import { CorrectionsModule } from './corrections/corrections.module.js';
 import { DbModule } from './db/db.module.js';
+import { DocumentsModule } from './documents/documents.module.js';
 import { DoorModule } from './door/door.module.js';
 import { HealthController } from './health/health.controller.js';
 import { JobsModule } from './jobs/jobs.module.js';
@@ -20,6 +21,7 @@ import { WorkspaceModule } from './workspace/workspace.module.js';
     SeedModule,
     PipelineModule,
     UploadsModule,
+    DocumentsModule,
     CorrectionsModule,
     CleanupModule,
   ],
