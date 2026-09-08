@@ -219,3 +219,51 @@ describe('an amount written with more decimals than the value', () => {
     expect(found).toBeNull();
   });
 });
+
+// A short quote can be on the page more than once. What the first pass
+// learned about the other values on the page decides which one is meant.
+describe('a quote that appears more than once', () => {
+  const itemLine = line(0, 'Packaging design, 3 SKUs 3 350.00 1050.00');
+  const page = pdfPage(1, itemLine);
+  const description = ground(
+    { value: 'Packaging design, 3 SKUs', quote: 'Packaging design, 3 SKUs', page: 1 },
+    [page],
+  ) as { page: number; box: Box };
+
+  it('takes the first one when nothing else is known', () => {
+    expect(ground({ value: '3', quote: '3', page: 1 }, [page])).toEqual({
+      page: 1,
+      box: boxOf(itemLine[2]),
+    });
+  });
+
+  it('leaves the words another value already owns', () => {
+    const found = ground({ value: '3', quote: '3', page: 1, avoid: [description.box] }, [page]);
+
+    expect(found).toEqual({ page: 1, box: boxOf(itemLine[4]) });
+  });
+
+  it('still takes owned words when the quote is nowhere else', () => {
+    const found = ground({ value: 'SKUs', quote: 'SKUs', page: 1, avoid: [description.box] }, [
+      page,
+    ]);
+
+    expect(found).toEqual({ page: 1, box: boxOf(itemLine[3]) });
+  });
+
+  it('takes the one nearest to the rest of its row', () => {
+    const first = line(0, 'Stamps 2 12.50 25.00');
+    const second = line(1, 'Labels 1 25.00 25.00');
+    const rows = pdfPage(1, first, second);
+    const secondTotal = boxOf(second[3]);
+
+    // The line total of that row already owns its own 25.00, so the unit
+    // price is the nearest free one.
+    const found = ground(
+      { value: '25', quote: '25.00', page: 1, avoid: [secondTotal], near: [secondTotal] },
+      [rows],
+    );
+
+    expect(found).toEqual({ page: 1, box: boxOf(second[2]) });
+  });
+});

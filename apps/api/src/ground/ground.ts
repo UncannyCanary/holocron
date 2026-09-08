@@ -17,6 +17,13 @@ export type GroundInput = {
   quote: string | null;
   // The page it read them from, counting from 1.
   page: number | null;
+  // Boxes other values on this page already own. Words inside them are not
+  // this value's, unless the quote appears nowhere else.
+  avoid?: Box[];
+  // Boxes of the values that sit on the same row, such as the other amounts
+  // of a line item. When the quote appears more than once, the one nearest to
+  // these wins.
+  near?: Box[];
 };
 
 // One page of the document with the words we read ourselves. Every page is
@@ -114,18 +121,21 @@ function endsWord(owner: number[], at: number): boolean {
   return at === owner.length - 1 || owner[at + 1] !== owner[at];
 }
 
-// The run of words that says the wanted text, as a first and last span, or
-// nothing. An exact run wins, and the shortest exact run wins over a longer
-// one. Only when there is no exact run do we look for a close one.
-function findRun(spans: Span[], wanted: string): [number, number] | null {
+type Run = [number, number];
+
+// Every run of words that says the wanted text, each as a first and last
+// span, in reading order. Exact runs win, and only the shortest of them are
+// kept. Only when there is no exact run do we look for a close one, and then
+// there is at most one.
+function findRuns(spans: Span[], wanted: string): Run[] {
   const needle = fold(letters(wanted));
   if (needle.length === 0) {
-    return null;
+    return [];
   }
 
   const keys = spans.map((span) => fold(letters(span.text)));
   const stream = streamOf(keys);
-  let best: [number, number] | null = null;
+  const exact: Run[] = [];
 
   for (let at = stream.text.indexOf(needle); at !== -1; at = stream.text.indexOf(needle, at + 1)) {
     const end = at + needle.length - 1;
@@ -135,15 +145,17 @@ function findRun(spans: Span[], wanted: string): [number, number] | null {
     if (!startsWord(stream.owner, at) || !endsWord(stream.owner, end)) {
       continue;
     }
-    const run: [number, number] = [stream.owner[at], stream.owner[end]];
-    if (best === null || run[1] - run[0] < best[1] - best[0]) {
-      best = run;
-    }
+    exact.push([stream.owner[at], stream.owner[end]]);
   }
-  if (best !== null || mostlyDigits(letters(wanted))) {
-    return best;
+  if (exact.length > 0) {
+    const shortest = Math.min(...exact.map((run) => run[1] - run[0]));
+    return exact.filter((run) => run[1] - run[0] === shortest);
+  }
+  if (mostlyDigits(letters(wanted))) {
+    return [];
   }
 
+  let best: Run | null = null;
   let bestScore = CLOSE_ENOUGH;
   for (let from = 0; from < spans.length; from += 1) {
     let text = '';
@@ -162,7 +174,11 @@ function findRun(spans: Span[], wanted: string): [number, number] | null {
       }
     }
   }
-  return best;
+  return best === null ? [] : [best];
+}
+
+function findRun(spans: Span[], wanted: string): Run | null {
+  return findRuns(spans, wanted)[0] ?? null;
 }
 
 // A word that could be part of a written date: a number, a month, or the word
@@ -268,17 +284,72 @@ export function ground(field: GroundInput, pages: GroundPage[]): Grounding | nul
     return null;
   }
 
-  const quoted = findRun(page.textLayer.spans, field.quote);
-  if (quoted === null) {
-    return null;
+  const spans = page.textLayer.spans;
+  const candidates: Box[] = [];
+  for (const quoted of findRuns(spans, field.quote)) {
+    const run = spans.slice(quoted[0], quoted[1] + 1);
+    const inside = findValue(run, field.value);
+    const box =
+      inside === null
+        ? null
+        : unionBox(run.slice(inside[0], inside[1] + 1).map((span) => span.box));
+    if (box !== null) {
+      candidates.push(box);
+    }
   }
 
-  const run = page.textLayer.spans.slice(quoted[0], quoted[1] + 1);
-  const inside = findValue(run, field.value);
-  if (inside === null) {
-    return null;
-  }
-
-  const box = unionBox(run.slice(inside[0], inside[1] + 1).map((span) => span.box));
+  const box = choose(candidates, field.avoid ?? [], field.near ?? []);
   return box === null ? null : { page: page.number, box };
+}
+
+// A short quote such as "3" can be on the page more than once. The words
+// another value already owns are not this one's, so those candidates go
+// first, unless they are all there is. Among what is left, the one nearest
+// to the rest of its row wins, else the first in reading order.
+function choose(candidates: Box[], avoid: Box[], near: Box[]): Box | null {
+  if (candidates.length === 0) {
+    return null;
+  }
+  const free = candidates.filter((box) => !avoid.some((taken) => contains(taken, box)));
+  const pool = free.length > 0 ? free : candidates;
+  if (near.length === 0) {
+    return pool[0];
+  }
+  // A row's values share a line, so a candidate on the same line as one of
+  // them beats one that is merely close by, such as the same column one row
+  // up. After that the nearest wins.
+  const onLine = pool.filter((box) => near.some((other) => sharesLine(box, other)));
+  const ranked = onLine.length > 0 ? onLine : pool;
+  return ranked.reduce((best, box) =>
+    distanceTo(box, near) < distanceTo(best, near) ? box : best,
+  );
+}
+
+function sharesLine(box: Box, other: Box): boolean {
+  const middle = (box.y0 + box.y1) / 2;
+  return middle >= other.y0 - SLACK && middle <= other.y1 + SLACK;
+}
+
+// A little slack, since two boxes drawn from the same words can differ by a
+// rounding.
+const SLACK = 0.002;
+
+function contains(outer: Box, inner: Box): boolean {
+  return (
+    inner.x0 >= outer.x0 - SLACK &&
+    inner.y0 >= outer.y0 - SLACK &&
+    inner.x1 <= outer.x1 + SLACK &&
+    inner.y1 <= outer.y1 + SLACK
+  );
+}
+
+// How far a box is from the nearest of some others, centre to centre.
+function distanceTo(box: Box, others: Box[]): number {
+  const x = (box.x0 + box.x1) / 2;
+  const y = (box.y0 + box.y1) / 2;
+  return Math.min(
+    ...others.map((other) =>
+      Math.hypot(x - (other.x0 + other.x1) / 2, y - (other.y0 + other.y1) / 2),
+    ),
+  );
 }

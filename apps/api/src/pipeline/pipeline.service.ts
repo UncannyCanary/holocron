@@ -8,12 +8,12 @@ import { DB } from '../db/db.module.js';
 import { document, field, page, run, runStep } from '../db/schema.js';
 import { extract } from '../extract/extract.js';
 import { spentThisMonth } from '../extract/spend.js';
-import { ground } from '../ground/ground.js';
 import { type BuiltPage, buildPages } from '../pages/pages.js';
 import { dataPath } from '../paths.js';
 import { checkPageCount } from '../uploads/upload-limits.js';
 import { applyChecks } from './apply-checks.js';
 import { flattenExtraction } from './flatten.js';
+import { groundAll } from './ground-all.js';
 import { MODEL_CLIENT } from './model-client.js';
 
 type StepName = (typeof runStep.name.enumValues)[number];
@@ -234,11 +234,11 @@ export class PipelineService {
     // A re-run replaces what the last one said.
     await this.db.delete(field).where(eq(field.documentId, documentId));
 
-    for (const flat of flattenExtraction(extraction)) {
-      const found =
-        flat.value === null
-          ? null
-          : ground({ value: flat.value, quote: flat.quote, page: flat.page }, forGrounding);
+    const flats = flattenExtraction(extraction);
+    const boxes = groundAll(flats, forGrounding);
+
+    for (const flat of flats) {
+      const found = boxes.get(flat.name) ?? null;
 
       await this.db.insert(field).values({
         documentId,
