@@ -1,7 +1,7 @@
 import type { DocumentType } from '@holocron/shared';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createColumnHelper, flexRender, tableFeatures, useTable } from '@tanstack/react-table';
-import { useRef, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { DocumentBadge, DocumentDot } from '../components/DocumentState';
 import { Kbd } from '../components/Kbd';
 import { type Hint, Screen } from '../components/Screen';
@@ -308,131 +308,101 @@ function TablePage() {
           <Kbd>/</Kbd>
         </div>
 
-        <details className="relative">
-          <summary className={FILTER_TRIGGER}>
-            Type{filters.type.length > 0 && ` (${filters.type.length})`}
-            <ChevronDown />
-          </summary>
-          <div className={FILTER_PANEL}>
-            {TYPE_OPTIONS.map((type) => (
-              <label key={type} className={FILTER_OPTION}>
-                <input
-                  type="checkbox"
-                  checked={filters.type.includes(type)}
-                  onChange={() => toggleType(type)}
-                />
-                {TYPE_LABELS[type]}
-              </label>
-            ))}
-          </div>
-        </details>
-
-        <details className="relative">
-          <summary className={FILTER_TRIGGER}>
-            Trust{filters.trust.length > 0 && ` (${filters.trust.length})`}
-            <ChevronDown />
-          </summary>
-          <div className={FILTER_PANEL}>
-            {TRUST_OPTIONS.map((trust) => (
-              <label key={trust} className={FILTER_OPTION}>
-                <input
-                  type="checkbox"
-                  checked={filters.trust.includes(trust)}
-                  onChange={() => toggleTrust(trust)}
-                />
-                {STATE_LABELS[trust]}
-              </label>
-            ))}
-            <div className="mt-1 border-line-row border-t px-2 pt-2 text-xs text-ink-quiet">
-              Pick none to see them all.
-            </div>
-          </div>
-        </details>
-
-        <details className="relative">
-          <summary className={FILTER_TRIGGER}>
-            Date
-            <ChevronDown />
-          </summary>
-          <div className={`${FILTER_PANEL} w-64 gap-2 p-3`}>
-            <label className="flex flex-col gap-1 text-xs text-ink-soft">
-              From
+        <FilterMenu label={<>Type{filters.type.length > 0 && ` (${filters.type.length})`}</>}>
+          {TYPE_OPTIONS.map((type) => (
+            <label key={type} className={FILTER_OPTION}>
               <input
-                type="date"
-                value={filters.dateFrom ?? ''}
-                onChange={(event) => setFilters({ dateFrom: event.target.value || null })}
-                className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
+                type="checkbox"
+                checked={filters.type.includes(type)}
+                onChange={() => toggleType(type)}
               />
+              {TYPE_LABELS[type]}
             </label>
-            <label className="flex flex-col gap-1 text-xs text-ink-soft">
-              To
-              <input
-                type="date"
-                value={filters.dateTo ?? ''}
-                onChange={(event) => setFilters({ dateTo: event.target.value || null })}
-                className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
-              />
-            </label>
-          </div>
-        </details>
+          ))}
+        </FilterMenu>
 
-        <details className="relative">
-          <summary className={FILTER_TRIGGER}>
-            Amount
-            <ChevronDown />
-          </summary>
-          <div className={`${FILTER_PANEL} w-56 gap-2 p-3`}>
-            <label className="flex flex-col gap-1 text-xs text-ink-soft">
-              At least
+        <FilterMenu label={<>Trust{filters.trust.length > 0 && ` (${filters.trust.length})`}</>}>
+          {TRUST_OPTIONS.map((trust) => (
+            <label key={trust} className={FILTER_OPTION}>
               <input
-                type="number"
-                value={filters.amountMin ?? ''}
-                onChange={(event) =>
-                  setFilters({
-                    amountMin: event.target.value === '' ? null : Number(event.target.value),
-                  })
-                }
-                className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
+                type="checkbox"
+                checked={filters.trust.includes(trust)}
+                onChange={() => toggleTrust(trust)}
               />
+              {STATE_LABELS[trust]}
             </label>
-            <label className="flex flex-col gap-1 text-xs text-ink-soft">
-              At most
-              <input
-                type="number"
-                value={filters.amountMax ?? ''}
-                onChange={(event) =>
-                  setFilters({
-                    amountMax: event.target.value === '' ? null : Number(event.target.value),
-                  })
-                }
-                className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
-              />
-            </label>
+          ))}
+          <div className="mt-1 border-line-row border-t px-2 pt-2 text-xs text-ink-quiet">
+            Pick none to see them all.
           </div>
-        </details>
+        </FilterMenu>
 
-        <details className="relative">
-          <summary className={FILTER_TRIGGER}>
-            Vendor or party
-            <ChevronDown />
-          </summary>
-          <div className={`${FILTER_PANEL} max-h-64 overflow-y-auto`}>
-            {vendors.length === 0 && (
-              <div className="px-2 py-1.5 text-note text-ink-faint">Nothing here yet.</div>
-            )}
-            {vendors.map((vendor) => (
-              <label key={vendor} className={FILTER_OPTION}>
-                <input
-                  type="radio"
-                  name="vendor"
-                  checked={filters.vendor === vendor}
-                  onChange={() => toggleVendor(vendor)}
-                />
-                <span className="truncate">{vendor}</span>
-              </label>
-            ))}
-          </div>
-        </details>
+        <FilterMenu label="Date" panel="w-64 gap-2 p-3">
+          <label className="flex flex-col gap-1 text-xs text-ink-soft">
+            From
+            <input
+              type="date"
+              value={filters.dateFrom ?? ''}
+              onChange={(event) => setFilters({ dateFrom: event.target.value || null })}
+              className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-ink-soft">
+            To
+            <input
+              type="date"
+              value={filters.dateTo ?? ''}
+              onChange={(event) => setFilters({ dateTo: event.target.value || null })}
+              className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
+            />
+          </label>
+        </FilterMenu>
+
+        <FilterMenu label="Amount" panel="w-56 gap-2 p-3">
+          <label className="flex flex-col gap-1 text-xs text-ink-soft">
+            At least
+            <input
+              type="number"
+              value={filters.amountMin ?? ''}
+              onChange={(event) =>
+                setFilters({
+                  amountMin: event.target.value === '' ? null : Number(event.target.value),
+                })
+              }
+              className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-ink-soft">
+            At most
+            <input
+              type="number"
+              value={filters.amountMax ?? ''}
+              onChange={(event) =>
+                setFilters({
+                  amountMax: event.target.value === '' ? null : Number(event.target.value),
+                })
+              }
+              className="h-8 rounded border border-line-strong bg-card-raised px-2 text-note"
+            />
+          </label>
+        </FilterMenu>
+
+        <FilterMenu label="Vendor or party" panel="max-h-64 overflow-y-auto">
+          {vendors.length === 0 && (
+            <div className="px-2 py-1.5 text-note text-ink-faint">Nothing here yet.</div>
+          )}
+          {vendors.map((vendor) => (
+            <label key={vendor} className={FILTER_OPTION}>
+              <input
+                type="radio"
+                name="vendor"
+                checked={filters.vendor === vendor}
+                onChange={() => toggleVendor(vendor)}
+              />
+              <span className="truncate">{vendor}</span>
+            </label>
+          ))}
+        </FilterMenu>
 
         {hasFilters && (
           <button
@@ -514,6 +484,44 @@ function TablePage() {
         <span>The CSV holds the rows you can see, with a trust column beside every value.</span>
       </div>
     </Screen>
+  );
+}
+
+// One filter menu. Every menu shares a name, so opening one closes the rest,
+// and a menu closes when focus leaves it, which is what a click elsewhere or
+// a Tab away does. Escape closes it too. No listener on the window is needed.
+function FilterMenu({
+  label,
+  panel = '',
+  children,
+}: {
+  label: ReactNode;
+  panel?: string;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      name="table-filter"
+      className="relative"
+      onBlur={(event) => {
+        const next = event.relatedTarget;
+        if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
+          event.currentTarget.open = false;
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector('summary')?.focus();
+        }
+      }}
+    >
+      <summary className={FILTER_TRIGGER}>
+        {label}
+        <ChevronDown />
+      </summary>
+      <div className={`${FILTER_PANEL} ${panel}`}>{children}</div>
+    </details>
   );
 }
 
