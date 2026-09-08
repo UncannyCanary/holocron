@@ -30,9 +30,20 @@ export class PipelineWorker implements OnApplicationBootstrap, OnApplicationShut
     // One document at a time. Every job already carries its workspace as its
     // group, so turning this number up later shares the worker fairly between
     // visitors without another change.
+    //
+    // The queue asks Postgres to wake the worker the moment a job lands, but
+    // that wake up does not always arrive, and the fallback poll is 30 seconds
+    // by default. A person watching an upload should not wait that long, so
+    // the worker also looks every 2 seconds and keeps going while there is a
+    // backlog.
     await this.boss.work<ProcessDocumentJob>(
       PROCESS_DOCUMENT,
-      { localConcurrency: 1 },
+      {
+        localConcurrency: 1,
+        pollingIntervalSeconds: 2,
+        notifyPollingIntervalSeconds: 2,
+        burstWhenReadyExceeds: 1,
+      },
       async ([job]) => {
         await this.pipeline.run(job.data.documentId);
       },

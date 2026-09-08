@@ -1,12 +1,17 @@
-import { eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { check, document, field } from '../db/schema.js';
 
 // The pages, the text layer, and the model run stay shared: this only copies
 // the document, field, and check rows, so a correction in one workspace can
-// never touch another visitor's copy of the same sample.
+// never touch another visitor's copy of the same sample. Only samples that
+// have been read are copied. A copy is a snapshot, so a sample still in the
+// queue would stay queued in the new workspace forever.
 export async function copySampleDocumentsIntoWorkspace(db: Db, workspaceId: string): Promise<void> {
-  const canonicalDocuments = await db.select().from(document).where(isNull(document.workspaceId));
+  const canonicalDocuments = await db
+    .select()
+    .from(document)
+    .where(and(isNull(document.workspaceId), eq(document.status, 'ready')));
 
   for (const canonical of canonicalDocuments) {
     const [copy] = await db
