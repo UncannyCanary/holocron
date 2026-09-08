@@ -57,6 +57,15 @@ export function ensureWorkspace(): Promise<Workspace> {
 export type DocumentStatus = 'queued' | 'processing' | 'ready' | 'failed';
 export type DocumentTrust = 'needs-review' | 'mostly-verified' | 'verified';
 
+// One field's value and trust, as far as the data table needs it: no box,
+// no quote, no page. The review screen has its own richer shape for that.
+export type TableFieldValue = {
+  name: string;
+  value: string | null;
+  currency: string | null;
+  trust: FieldTrust;
+};
+
 export type DocumentSummary = {
   id: string;
   type: DocumentType;
@@ -69,10 +78,18 @@ export type DocumentSummary = {
   why: string;
   isSample: boolean;
   createdAt: string;
+  fields: TableFieldValue[];
 };
 
 export function listDocuments(): Promise<DocumentSummary[]> {
   return request('/documents');
+}
+
+// The data table's own rows: the same summaries, but the search word is
+// matched against every field value in Postgres rather than in the browser.
+export function listTableDocuments(q: string): Promise<DocumentSummary[]> {
+  const query = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+  return request(`/documents/table${query}`);
 }
 
 export function uploadDocument(

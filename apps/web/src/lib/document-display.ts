@@ -53,6 +53,12 @@ export function sortWorstFirst(docs: DocumentSummary[]): DocumentSummary[] {
   );
 }
 
+// Where a document's state sits in the worst-first order, as a plain number
+// the table can sort by like any other column.
+export function stateRank(doc: Stateful): number {
+  return RANK[stateOf(doc)];
+}
+
 export function totalText(doc: Pick<DocumentSummary, 'total'>): string {
   if (!doc.total) return '—';
   return doc.total.currency ? `${doc.total.amount} ${doc.total.currency}` : doc.total.amount;

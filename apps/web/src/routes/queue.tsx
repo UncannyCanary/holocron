@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { DocumentBadge, DocumentDot } from '../components/DocumentState';
 import { Kbd } from '../components/Kbd';
@@ -11,6 +11,7 @@ import {
   TYPE_LABELS,
   totalText,
 } from '../lib/document-display';
+import { DEFAULT_FILTERS } from '../lib/table-query';
 import { useDocuments } from '../lib/use-documents';
 import { useShortcuts } from '../lib/use-shortcuts';
 
@@ -22,6 +23,7 @@ const HINTS: Hint[] = [
   { keys: ['J', 'K'], label: 'Move' },
   { keys: ['⏎'], label: 'Open' },
   { keys: ['U'], label: 'Upload' },
+  { keys: ['G', 'T'], label: 'Table' },
   { keys: ['?'], label: 'All shortcuts' },
 ];
 
@@ -80,6 +82,7 @@ function QueuePage() {
       if (doc) open(doc);
     },
     u: () => navigate({ to: '/' }),
+    'g t': () => navigate({ to: '/table', search: DEFAULT_FILTERS }),
   });
 
   return (
@@ -87,9 +90,24 @@ function QueuePage() {
       breadcrumb="Queue"
       hints={HINTS}
       actions={
-        <button type="button" className="btn" onClick={() => navigate({ to: '/' })}>
-          Upload<Kbd>U</Kbd>
-        </button>
+        <>
+          <div className="inline-flex overflow-hidden rounded-md border border-line-strong bg-card">
+            <span className="inline-flex h-8 items-center bg-ink px-3.5 text-note font-medium text-paper">
+              Queue
+            </span>
+            <Link
+              to="/table"
+              search={DEFAULT_FILTERS}
+              className="inline-flex h-8 items-center gap-1.5 px-3.5 text-note font-medium text-ink-soft no-underline"
+            >
+              Table<Kbd>G</Kbd>
+              <Kbd>T</Kbd>
+            </Link>
+          </div>
+          <button type="button" className="btn" onClick={() => navigate({ to: '/' })}>
+            Upload<Kbd>U</Kbd>
+          </button>
+        </>
       }
     >
       <div className="px-5 pt-6.5 pb-4">

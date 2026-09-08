@@ -8,10 +8,11 @@ import {
   HttpStatus,
   Inject,
   Param,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import type { Request, Response } from 'express';
 import { workspaceIdFromCookieHeader } from '../cookie/workspace-cookie.js';
 import type { Db } from '../db/client.js';
@@ -28,6 +29,7 @@ import {
   summarizeReady,
   totalOf,
 } from './document-summary.js';
+import { tsQueryFrom } from './table-search.js';
 
 type DocumentRow = typeof document.$inferSelect;
 
@@ -60,6 +62,64 @@ export class DocumentsController {
       .orderBy(document.createdAt);
 
     return Promise.all(documents.map((row) => this.summarize(row)));
+  }
+
+  // The data table: every document again, but with every field's value and
+  // trust alongside the summary, so the screen can filter, sort, and build a
+  // CSV without another round trip per document. A search word narrows the
+  // list to documents whose file name or one of their field values matches
+  // it, using Postgres's own text search rather than pulling everything down
+  // to filter in the browser. This route is declared before ":id" so a
+  // request for "table" is never read as a document id.
+  @Get('table')
+  async table(@Req() req: Request, @Query('q') q?: string) {
+    const workspaceId = workspaceIdFromCookieHeader(req.headers.cookie);
+    if (workspaceId === null) {
+      throw new HttpException(NO_WORKSPACE_MESSAGE, HttpStatus.NOT_FOUND);
+    }
+
+    const matches = await this.matchingDocumentIds(workspaceId, q);
+    if (matches !== null && matches.size === 0) {
+      return [];
+    }
+
+    const documents = await this.db
+      .select()
+      .from(document)
+      .where(eq(document.workspaceId, workspaceId))
+      .orderBy(document.createdAt);
+    const rows = matches === null ? documents : documents.filter((row) => matches.has(row.id));
+
+    return Promise.all(rows.map((row) => this.summarize(row)));
+  }
+
+  // Every document in the workspace whose file name or one of its field
+  // values matches the search words, or null when there is no search to run
+  // at all, which means "everything".
+  private async matchingDocumentIds(
+    workspaceId: string,
+    q: string | undefined,
+  ): Promise<Set<string> | null> {
+    const tsQuery = tsQueryFrom(q);
+    if (tsQuery === null) {
+      return null;
+    }
+
+    const rows = await this.db
+      .selectDistinct({ id: document.id })
+      .from(document)
+      .leftJoin(field, eq(field.documentId, document.id))
+      .where(
+        and(
+          eq(document.workspaceId, workspaceId),
+          sql`(
+            to_tsvector('simple', coalesce(${field.value}, '')) @@ to_tsquery('simple', ${tsQuery})
+            or to_tsvector('simple', regexp_replace(${document.filePath}, '^.*/', '')) @@ to_tsquery('simple', ${tsQuery})
+          )`,
+        ),
+      );
+
+    return new Set(rows.map((row) => row.id));
   }
 
   // Everything the review screen shows about one document. The pages and the
@@ -188,6 +248,15 @@ export class DocumentsController {
       total: totalOf(type, fields),
       isSample: doc.documentId !== null,
       createdAt: doc.createdAt.toISOString(),
+      // Every value as read, for the table's search facets and its CSV
+      // export. The review screen has its own richer field shape, with the
+      // box and the quote; this one is only what a row in the table needs.
+      fields: fields.map((row) => ({
+        name: row.name,
+        value: row.value,
+        currency: row.currency,
+        trust: row.trust,
+      })),
     };
 
     if (doc.status === 'ready') {

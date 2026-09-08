@@ -5,6 +5,7 @@ import { type Hint, Screen } from '../components/Screen';
 import { UploadDropzone } from '../components/UploadDropzone';
 import type { DocumentSummary } from '../lib/api';
 import { sortWorstFirst, stateOf, TYPE_LABELS, totalText } from '../lib/document-display';
+import { DEFAULT_FILTERS } from '../lib/table-query';
 import { useDocuments } from '../lib/use-documents';
 import { useShortcuts } from '../lib/use-shortcuts';
 
@@ -16,6 +17,7 @@ const HINTS: Hint[] = [
   { keys: ['⏎'], label: 'Open', dark: true },
   { keys: ['U'], label: 'Upload' },
   { keys: ['G', 'Q'], label: 'Queue' },
+  { keys: ['G', 'T'], label: 'Table' },
   { keys: ['?'], label: 'All shortcuts' },
 ];
 
@@ -40,6 +42,7 @@ function FirstVisitPage() {
       }
     },
     'g q': () => navigate({ to: '/queue' }),
+    'g t': () => navigate({ to: '/table', search: DEFAULT_FILTERS }),
   });
 
   return (
