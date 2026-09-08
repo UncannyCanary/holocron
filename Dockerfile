@@ -13,7 +13,10 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
-RUN pnpm --filter api build && pnpm --filter web build
+# @holocron/shared ships compiled, not raw TypeScript, since the api and the
+# worker run as plain compiled JS with no loader that could read it straight
+# from source the way Vite does for tests.
+RUN pnpm --filter @holocron/shared build && pnpm --filter api build && pnpm --filter web build
 
 # Runs the API by default. The worker service in compose overrides the command.
 FROM build AS api

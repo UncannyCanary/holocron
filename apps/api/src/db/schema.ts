@@ -50,6 +50,8 @@ export const workspace = pgTable('workspace', {
   reopenSecret: text('reopen_secret').notNull().unique(),
 });
 
+export type Workspace = typeof workspace.$inferSelect;
+
 // One uploaded file, or one shared sample. Samples are stored once: their
 // canonical row has a null workspaceId. A workspace's copy of a sample sets
 // workspaceId to that workspace and documentId back to the canonical row, so

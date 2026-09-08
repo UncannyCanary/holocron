@@ -25,11 +25,14 @@ services:
       PROCESS_ROLE: api
       DATABASE_URL: postgres://holocron:${POSTGRES_PASSWORD}@postgres:5432/holocron
       PORT: 3000
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      ACCESS_CODE: ${ACCESS_CODE:-}
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - data:/data
+      - ./samples:/app/samples:ro
 
   worker:
     build:
@@ -45,6 +48,7 @@ services:
         condition: service_healthy
     volumes:
       - data:/data
+      - ./samples:/app/samples:ro
     stop_grace_period: 60s
 
   caddy:

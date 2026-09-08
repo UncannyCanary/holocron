@@ -9,3 +9,5 @@ export function createDb(databaseUrl = process.env.DATABASE_URL) {
   const queryClient = postgres(databaseUrl);
   return drizzle(queryClient, { schema });
 }
+
+export type Db = ReturnType<typeof createDb>;
