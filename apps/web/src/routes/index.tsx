@@ -21,33 +21,18 @@ const HINTS: Hint[] = [
   { keys: ['?'], label: 'All shortcuts' },
 ];
 
-// Small counts are written as words. The serif face draws figures the old
-// way, with a 7 hanging below the line, which looks wrong at headline size.
-const WORDS = [
-  'No',
-  'One',
-  'Two',
-  'Three',
-  'Four',
-  'Five',
-  'Six',
-  'Seven',
-  'Eight',
-  'Nine',
-  'Ten',
-  'Eleven',
-  'Twelve',
-];
-
-function count(n: number, capital = true): string {
-  const word = WORDS[n];
-  if (word === undefined) return String(n);
-  return capital ? word : word.toLowerCase();
-}
-
-function headline(total: number, ready: number): string {
-  if (ready !== total) return `${count(ready)} of ${count(total, false)} documents are ready`;
-  return total === 1 ? 'One document is ready' : `${count(total)} documents are ready`;
+// The count is the one thing on the screen a person is looking for, so it
+// sits in the verified green and the words stay in ink.
+function Headline({ total, ready }: { total: number; ready: number }) {
+  const count = (n: number) => <span className="text-verified-dot">{n}</span>;
+  if (ready !== total) {
+    return (
+      <>
+        {count(ready)} of {count(total)} documents are ready
+      </>
+    );
+  }
+  return total === 1 ? <>{count(1)} document is ready</> : <>{count(total)} documents are ready</>;
 }
 
 function FirstVisitPage() {
@@ -80,7 +65,7 @@ function FirstVisitPage() {
           ) : (
             <>
               <h1 className="font-serif text-display font-normal">
-                {headline(documents.length, ready)}
+                <Headline total={documents.length} ready={ready} />
               </h1>
               <p className="mt-2.5 max-w-[720px] text-lede leading-relaxed text-ink-soft">
                 {startHere
