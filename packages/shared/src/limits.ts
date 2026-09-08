@@ -10,6 +10,7 @@ export const LIMITS = {
   wrongCodeAttemptsBeforeLockout: 5,
   lockoutMinutes: 15,
   workspaceUntouchedDays: 14,
+  monthlyModelSpendUsd: 15,
 } as const;
 
 export const MESSAGES = {
@@ -21,4 +22,6 @@ export const MESSAGES = {
   tooManyUploadsToday: `This workspace has used its ${LIMITS.uploadsPerWorkspacePerDay} uploads for today. The sample documents still work.`,
   fileTooLarge: 'This file is over the 10 MB limit.',
   tooManyPages: `This file has more than ${LIMITS.maxPagesPerDocument} pages.`,
+  spendCapReached:
+    'Holocron is at its monthly processing budget. You can still review every document already here.',
 } as const;

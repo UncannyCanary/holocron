@@ -19,6 +19,7 @@
     "db:migrate": "dotenv -e ../../.env -- drizzle-kit migrate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
     "@holocron/shared": "workspace:*",
     "@napi-rs/canvas": "^1.0.8",
     "@nestjs/common": "^12.0.1",
