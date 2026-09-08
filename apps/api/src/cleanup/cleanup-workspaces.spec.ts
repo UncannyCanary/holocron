@@ -21,7 +21,7 @@ async function backdateOpenedAt(
 
 describe('cleanupUntouchedWorkspaces', () => {
   const db = createDb(
-    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron',
+    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron_test',
   );
   let tmp: string;
 

@@ -20,7 +20,7 @@ process.env.OCR_CACHE_DIR ??= `${scratch}/tesseract`;
 // finds the rows already there and does nothing.
 describe('SeedService', () => {
   const db = createDb(
-    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron',
+    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron_test',
   );
   // Seeding puts every unread sample on the queue. This test is about the
   // rows, so the jobs are counted and thrown away.

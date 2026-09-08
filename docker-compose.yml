@@ -9,6 +9,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Creates the tests' own database the first time the volume is made.
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "holocron"]
       interval: 5s

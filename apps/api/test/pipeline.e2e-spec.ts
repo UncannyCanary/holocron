@@ -24,7 +24,7 @@ import { PipelineService } from '../src/pipeline/pipeline.service.js';
 // No door, so a request only needs the workspace cookie.
 process.env.ACCESS_CODE = '';
 process.env.COOKIE_SECRET ??= 'test-cookie-secret';
-process.env.DATABASE_URL ??= 'postgres://holocron:holocron@localhost:5432/holocron';
+process.env.DATABASE_URL ??= 'postgres://holocron:holocron@localhost:5432/holocron_test';
 
 // Page images, uploads and the OCR language file go under .scratch, not the
 // /data volume a container would have.

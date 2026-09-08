@@ -11,14 +11,14 @@ process.env.ACCESS_CODE = 'letmein';
 process.env.COOKIE_SECRET ??= 'test-cookie-secret';
 // The same local Compose database the unit tests fall back to, so this runs
 // with plain `pnpm test:e2e` and no .env wired in.
-process.env.DATABASE_URL ??= 'postgres://holocron:holocron@localhost:5432/holocron';
+process.env.DATABASE_URL ??= 'postgres://holocron:holocron@localhost:5432/holocron_test';
 
 describe('a fresh browser at the door', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const db = createDb(
-      process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron',
+      process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron_test',
     );
     await migrate(db, {
       migrationsFolder: fileURLToPath(new URL('../drizzle', import.meta.url)),

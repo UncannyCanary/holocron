@@ -9,7 +9,7 @@ describe('schema', () => {
   // Falls back to the local Compose database from .env.example so this test
   // runs the same way `pnpm test` does, without needing dotenv wired in.
   const db = createDb(
-    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron',
+    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron_test',
   );
 
   // Apply the checked-in migrations so this test works on a fresh database.

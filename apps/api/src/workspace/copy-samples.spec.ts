@@ -9,7 +9,7 @@ import { copySampleDocumentsIntoWorkspace } from './copy-samples.js';
 
 describe('copySampleDocumentsIntoWorkspace', () => {
   const db = createDb(
-    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron',
+    process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron_test',
   );
 
   beforeAll(async () => {

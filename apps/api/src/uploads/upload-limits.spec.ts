@@ -67,7 +67,7 @@ describe('upload limits', () => {
 
   describe('daily upload quota', () => {
     const db = createDb(
-      process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron',
+      process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron_test',
     );
 
     beforeAll(async () => {
