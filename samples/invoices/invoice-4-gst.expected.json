@@ -1,0 +1,116 @@
+{
+  "type": "invoice",
+  "source": {
+    "kind": "generated",
+    "note": "Written for this project from samples/invoices/models.mjs. Indian GST marketplace layout: prices carry the tax inside, each line prints its discount, taxable value, and two taxes. Everyone named is made up. All checks pass."
+  },
+  "currency": "INR",
+  "fields": {
+    "vendor": {
+      "value": "Kaveri Home Goods LLP",
+      "page": 1,
+      "quote": "Kaveri Home Goods LLP"
+    },
+    "invoice_number": {
+      "value": "KHG2026000417",
+      "page": 1,
+      "quote": "KHG2026000417"
+    },
+    "issue_date": {
+      "value": "2026-05-06",
+      "page": 1,
+      "quote": "06-05-2026"
+    },
+    "bill_to": {
+      "value": "Anil Rao",
+      "page": 1,
+      "quote": "Anil Rao"
+    },
+    "subtotal": {
+      "value": 629.0,
+      "page": 1,
+      "quote": "629.00"
+    },
+    "discount": {
+      "value": 60.0,
+      "page": 1,
+      "quote": "-60.00"
+    },
+    "taxable_value": {
+      "value": 482.2,
+      "page": 1,
+      "quote": "482.20"
+    },
+    "tax_lines": [
+      {
+        "label": "SGST/UTGST",
+        "amount": 43.4,
+        "page": 1,
+        "quote": "43.40"
+      },
+      {
+        "label": "CGST",
+        "amount": 43.4,
+        "page": 1,
+        "quote": "43.40"
+      }
+    ],
+    "total": {
+      "value": 569.0,
+      "page": 1,
+      "quote": "569.00"
+    }
+  },
+  "line_items": [
+    {
+      "description": "Steel Water Bottle 1 L",
+      "quantity": 1,
+      "unit_price": 599.0,
+      "discount": 30.0,
+      "taxable_value": 482.2,
+      "line_total": 569.0,
+      "page": 1,
+      "quote": "Steel Water Bottle 1 L"
+    },
+    {
+      "description": "Handling Fee",
+      "quantity": 1,
+      "unit_price": 30.0,
+      "discount": 30.0,
+      "taxable_value": 0.0,
+      "line_total": 0.0,
+      "page": 1,
+      "quote": "Handling Fee"
+    }
+  ],
+  "checks": [
+    {
+      "name": "line quantity times price equals line total",
+      "result": "pass"
+    },
+    {
+      "name": "line taxable value plus tax equals line total",
+      "result": "not_applicable"
+    },
+    {
+      "name": "sum of line totals equals subtotal",
+      "result": "pass"
+    },
+    {
+      "name": "taxable value plus taxes equals total",
+      "result": "pass"
+    },
+    {
+      "name": "issue date on or before due date",
+      "result": "not_applicable"
+    },
+    {
+      "name": "one currency throughout",
+      "result": "pass"
+    },
+    {
+      "name": "invoice number present",
+      "result": "pass"
+    }
+  ]
+}

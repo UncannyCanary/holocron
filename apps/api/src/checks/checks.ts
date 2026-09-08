@@ -130,8 +130,36 @@ function countText(quantity: number): string {
   return String(quantity);
 }
 
-// Quantity times unit price is the line total, one check per line. A line
-// that does not print a quantity, which is most shop receipt lines, has
+// What a document charges in tax: the one printed figure when there is one,
+// else the tax lines added up, with the names of the fields that made it.
+function taxOf(
+  fields: CheckFields,
+): { amount: number; currency: string | null; names: string[] } | null {
+  const printed = amountAt(fields, 'tax_amount');
+  if (printed !== null) {
+    return { amount: printed.amount, currency: printed.currency, names: [printed.name] };
+  }
+  const lines = rowsOf(fields, 'tax_lines')
+    .map((row) => amountAt(fields, `tax_lines.${row}.amount`))
+    .filter((line): line is Amount => line !== null);
+  if (lines.length === 0) {
+    return null;
+  }
+  const currency = lines[0].currency;
+  return {
+    amount: majorUnits(
+      lines.reduce((sum, line) => sum + minorUnits(line.amount, currency), 0),
+      currency,
+    ),
+    currency,
+    names: lines.map((line) => line.name),
+  };
+}
+
+// Quantity times unit price, less any discount printed on the line, is the
+// line total. Some documents print prices with the tax inside and some add
+// the line's tax after, so a total that matches either reading passes. A
+// line that does not print a quantity, which is most shop receipt lines, has
 // nothing to work out and is skipped.
 function lineMath(fields: CheckFields): CheckResult[] {
   const results: CheckResult[] = [];
@@ -142,25 +170,112 @@ function lineMath(fields: CheckFields): CheckResult[] {
     if (quantity === null || price === null || total === null) {
       continue;
     }
+    const discount = amountAt(fields, `line_items.${row}.discount`);
+    const tax = amountAt(fields, `line_items.${row}.tax`);
     const currency = total.currency ?? price.currency;
-    const worked = quantity.amount * price.amount;
     const line = row + 1;
-    const passed = within(worked, total.amount, LINE_ALLOWANCE, currency);
+
+    const before = majorUnits(
+      minorUnits(quantity.amount * price.amount, currency) -
+        minorUnits(discount?.amount ?? 0, currency),
+      currency,
+    );
+    const withTax = majorUnits(
+      minorUnits(before, currency) + minorUnits(tax?.amount ?? 0, currency),
+      currency,
+    );
+    const passed =
+      within(before, total.amount, LINE_ALLOWANCE, currency) ||
+      within(withTax, total.amount, LINE_ALLOWANCE, currency);
+
+    const worked =
+      `${countText(quantity.amount)} times ${moneyText(price.amount, currency)}` +
+      (discount === null ? '' : ` less ${moneyText(discount.amount, currency)}`) +
+      ` is ${moneyText(before, currency)}` +
+      (tax === null ? '' : `, or ${moneyText(withTax, currency)} with its tax`);
+
     results.push({
       name: `line_math.${row}`,
       passed,
       message: passed
         ? `Line ${line} adds up.`
-        : `Line ${line} says ${moneyText(total.amount, currency)}, but ${countText(quantity.amount)} times ${moneyText(price.amount, currency)} is ${moneyText(worked, currency)}.`,
+        : `Line ${line} says ${moneyText(total.amount, currency)}, but ${worked}.`,
       blamed: [total.name],
-      flagged: [quantity.name, price.name],
+      flagged: [
+        quantity.name,
+        price.name,
+        ...(discount === null ? [] : [discount.name]),
+        ...(tax === null ? [] : [tax.name]),
+      ],
     });
   }
   return results;
 }
 
+// A line that prints its taxable value and its tax: the two make the line
+// total. Only lines that print both are checked.
+function lineTax(fields: CheckFields): CheckResult[] {
+  const results: CheckResult[] = [];
+  for (const row of rowsOf(fields, 'line_items')) {
+    const taxable = amountAt(fields, `line_items.${row}.taxable_value`);
+    const tax = amountAt(fields, `line_items.${row}.tax`);
+    const total = amountAt(fields, `line_items.${row}.line_total`);
+    if (taxable === null || tax === null || total === null) {
+      continue;
+    }
+    const currency = total.currency ?? taxable.currency;
+    const added = majorUnits(
+      minorUnits(taxable.amount, currency) + minorUnits(tax.amount, currency),
+      currency,
+    );
+    const passed = within(added, total.amount, LINE_ALLOWANCE, currency);
+    const line = row + 1;
+    results.push({
+      name: `line_tax.${row}`,
+      passed,
+      message: passed
+        ? `Line ${line}'s taxable value and tax make its total.`
+        : `Line ${line} says ${moneyText(total.amount, currency)}, but its taxable value ${moneyText(taxable.amount, currency)} plus its tax ${moneyText(tax.amount, currency)} is ${moneyText(added, currency)}.`,
+      blamed: [total.name],
+      flagged: [taxable.name, tax.name],
+    });
+  }
+  return results;
+}
+
+// When the document prints both the tax lines and one figure for the total
+// tax, the lines add up to it.
+function taxLinesAddUp(fields: CheckFields): CheckResult[] {
+  const printed = amountAt(fields, 'tax_amount');
+  const lines = rowsOf(fields, 'tax_lines')
+    .map((row) => amountAt(fields, `tax_lines.${row}.amount`))
+    .filter((line): line is Amount => line !== null);
+  if (printed === null || lines.length === 0) {
+    return [];
+  }
+  const currency = printed.currency;
+  const added = majorUnits(
+    lines.reduce((sum, line) => sum + minorUnits(line.amount, currency), 0),
+    currency,
+  );
+  const passed = within(added, printed.amount, TOTAL_ALLOWANCE, currency);
+  return [
+    {
+      name: 'tax_lines',
+      passed,
+      message: passed
+        ? 'The taxes add up to the tax total.'
+        : `The taxes add up to ${moneyText(added, currency)}, but the tax total says ${moneyText(printed.amount, currency)}.`,
+      blamed: ['tax_amount'],
+      flagged: lines.map((line) => line.name),
+    },
+  ];
+}
+
 // The line totals add up to the subtotal. Every line has to have a total, or
-// the sum would be short through no fault of the subtotal.
+// the sum would be short through no fault of the subtotal. When lines print
+// their own discounts, a document may call the sum before those discounts
+// its subtotal, so the lines' gross amounts adding up counts too.
 function subtotalAddsUp(fields: CheckFields): CheckResult[] {
   const subtotal = amountAt(fields, 'subtotal');
   const rows = rowsOf(fields, 'line_items');
@@ -174,52 +289,94 @@ function subtotalAddsUp(fields: CheckFields): CheckResult[] {
     found.reduce((sum, line) => sum + minorUnits(line.amount, currency), 0),
     currency,
   );
-  const passed = within(added, subtotal.amount, TOTAL_ALLOWANCE, currency);
+
+  const discounted = rows.filter((row) => amountAt(fields, `line_items.${row}.discount`) !== null);
+  const gross = rows.map((row) => {
+    const quantity = amountAt(fields, `line_items.${row}.quantity`);
+    const price = amountAt(fields, `line_items.${row}.unit_price`);
+    return quantity === null || price === null ? null : quantity.amount * price.amount;
+  });
+  const beforeDiscounts =
+    discounted.length > 0 && gross.every((each) => each !== null)
+      ? majorUnits(
+          (gross as number[]).reduce((sum, each) => sum + minorUnits(each, currency), 0),
+          currency,
+        )
+      : null;
+
+  const passed =
+    within(added, subtotal.amount, TOTAL_ALLOWANCE, currency) ||
+    (beforeDiscounts !== null &&
+      within(beforeDiscounts, subtotal.amount, TOTAL_ALLOWANCE, currency));
   return [
     {
       name: 'subtotal',
       passed,
       message: passed
         ? 'The lines add up to the subtotal.'
-        : `The lines add up to ${moneyText(added, currency)}, but the subtotal says ${moneyText(subtotal.amount, currency)}.`,
+        : `The lines add up to ${moneyText(added, currency)}${
+            beforeDiscounts === null
+              ? ''
+              : `, or ${moneyText(beforeDiscounts, currency)} before their discounts`
+          }, but the subtotal says ${moneyText(subtotal.amount, currency)}.`,
       blamed: ['subtotal'],
       flagged: found.map((line) => line.name),
     },
   ];
 }
 
-// The subtotal, the tax, and any discount make the total. Tax and discount
-// are counted as nothing when the document does not print them, because a
-// document with no tax line is not a document with a missing tax line.
+// What is owed. When the document prints a taxable value, the total is that
+// plus the taxes plus any round off, and the discount is already inside it.
+// Otherwise the subtotal, the taxes, and any discount make the total. Tax,
+// discount, and round off count as nothing when the document does not print
+// them, because a document with no tax line is not a document with a missing
+// tax line.
 function totalAddsUp(fields: CheckFields, hasDiscount: boolean): CheckResult[] {
-  const subtotal = amountAt(fields, 'subtotal');
   const total = amountAt(fields, 'total');
-  if (subtotal === null || total === null) {
+  if (total === null) {
     return [];
   }
-  const tax = amountAt(fields, 'tax_amount');
-  const discount = hasDiscount ? amountAt(fields, 'discount') : null;
-  const currency = total.currency ?? subtotal.currency;
+  const taxable = amountAt(fields, 'taxable_value');
+  const subtotal = amountAt(fields, 'subtotal');
+  if (taxable === null && subtotal === null) {
+    return [];
+  }
+  const tax = taxOf(fields);
+  const roundOff = amountAt(fields, 'round_off');
+  const discount = hasDiscount && taxable === null ? amountAt(fields, 'discount') : null;
+  const currency = total.currency ?? taxable?.currency ?? subtotal?.currency ?? null;
+
+  const base = (taxable ?? subtotal) as Amount;
   const added = majorUnits(
-    minorUnits(subtotal.amount, currency) +
+    minorUnits(base.amount, currency) +
       minorUnits(tax?.amount ?? 0, currency) -
-      minorUnits(discount?.amount ?? 0, currency),
+      minorUnits(discount?.amount ?? 0, currency) +
+      minorUnits(roundOff?.amount ?? 0, currency),
     currency,
   );
-  const parts = discount === null ? 'The subtotal and tax' : 'The subtotal, tax and discount';
+
+  const parts = [
+    taxable === null ? 'The subtotal' : 'The taxable value',
+    ...(tax === null ? [] : ['tax']),
+    ...(discount === null ? [] : ['discount']),
+    ...(roundOff === null ? [] : ['round off']),
+  ];
+  const named =
+    parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
   const passed = within(added, total.amount, TOTAL_ALLOWANCE, currency);
   return [
     {
       name: 'total',
       passed,
       message: passed
-        ? `${parts} add up to the total.`
-        : `${parts} come to ${moneyText(added, currency)}, but the total says ${moneyText(total.amount, currency)}.`,
+        ? `${named} ${parts.length === 1 ? 'matches' : 'add up to'} the total.`
+        : `${named} ${parts.length === 1 ? 'is' : 'come to'} ${moneyText(added, currency)}, but the total says ${moneyText(total.amount, currency)}.`,
       blamed: ['total'],
       flagged: [
-        'subtotal',
-        ...(tax === null ? [] : [tax.name]),
+        base.name,
+        ...(tax === null ? [] : tax.names),
         ...(discount === null ? [] : [discount.name]),
+        ...(roundOff === null ? [] : [roundOff.name]),
       ],
     },
   ];
@@ -416,7 +573,9 @@ function termsUsed(fields: CheckFields): CheckResult[] {
 function invoiceChecks(fields: CheckFields): CheckResult[] {
   return [
     ...lineMath(fields),
+    ...lineTax(fields),
     ...subtotalAddsUp(fields),
+    ...taxLinesAddUp(fields),
     ...totalAddsUp(fields, true),
     ...dateOrder(fields, {
       name: 'date_order',
@@ -436,7 +595,9 @@ function invoiceChecks(fields: CheckFields): CheckResult[] {
 function receiptChecks(fields: CheckFields): CheckResult[] {
   return [
     ...lineMath(fields),
+    ...lineTax(fields),
     ...subtotalAddsUp(fields),
+    ...taxLinesAddUp(fields),
     ...totalAddsUp(fields, false),
     ...changeAddsUp(fields),
   ];

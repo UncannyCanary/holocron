@@ -43,6 +43,8 @@ const FRIENDLY_FIELD_NAMES: Record<string, string> = {
   subtotal: 'the subtotal',
   discount: 'the discount',
   tax_amount: 'the tax',
+  taxable_value: 'the taxable value',
+  round_off: 'the round off',
   total: 'the total',
   merchant: 'the merchant',
   purchased_at: 'the date',
@@ -57,6 +59,7 @@ const FRIENDLY_FIELD_NAMES: Record<string, string> = {
 
 const FRIENDLY_PREFIXES: Record<string, string> = {
   line_items: 'a line item',
+  tax_lines: 'a tax line',
   parties: 'a party',
   signature_parties: 'a signature',
   defined_terms: 'a defined term',

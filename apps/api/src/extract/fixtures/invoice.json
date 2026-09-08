@@ -6,20 +6,20 @@
   "effort": "medium",
   "usage": {
     "input_tokens": 2945,
-    "cache_creation_input_tokens": 2439,
+    "cache_creation_input_tokens": 2966,
     "cache_read_input_tokens": 0,
     "cache_creation": {
-      "ephemeral_5m_input_tokens": 2439,
+      "ephemeral_5m_input_tokens": 2966,
       "ephemeral_1h_input_tokens": 0
     },
-    "output_tokens": 596,
+    "output_tokens": 899,
     "output_tokens_details": {
       "thinking_tokens": 0
     },
     "service_tier": "standard",
     "inference_geo": "global"
   },
-  "costUsd": 0.0449,
+  "costUsd": 0.0557,
   "output": {
     "vendor": {
       "value": "Acme Supplies",
@@ -58,11 +58,38 @@
       "page": null,
       "quote": null
     },
+    "taxable_value": {
+      "value": null,
+      "currency": null,
+      "page": null,
+      "quote": null
+    },
+    "tax_lines": [
+      {
+        "label": {
+          "value": "Tax 10%",
+          "page": 1,
+          "quote": "Tax 10%"
+        },
+        "amount": {
+          "value": 16.5,
+          "currency": "USD",
+          "page": 1,
+          "quote": "16.50"
+        }
+      }
+    ],
     "tax_amount": {
       "value": 16.5,
       "currency": "USD",
       "page": 1,
       "quote": "16.50"
+    },
+    "round_off": {
+      "value": null,
+      "currency": null,
+      "page": null,
+      "quote": null
     },
     "total": {
       "value": 181.5,
@@ -88,6 +115,24 @@
           "page": 1,
           "quote": "4.50"
         },
+        "discount": {
+          "value": null,
+          "currency": null,
+          "page": null,
+          "quote": null
+        },
+        "taxable_value": {
+          "value": null,
+          "currency": null,
+          "page": null,
+          "quote": null
+        },
+        "tax": {
+          "value": null,
+          "currency": null,
+          "page": null,
+          "quote": null
+        },
         "line_total": {
           "value": 45,
           "currency": "USD",
@@ -111,6 +156,24 @@
           "currency": "USD",
           "page": 1,
           "quote": "60.00"
+        },
+        "discount": {
+          "value": null,
+          "currency": null,
+          "page": null,
+          "quote": null
+        },
+        "taxable_value": {
+          "value": null,
+          "currency": null,
+          "page": null,
+          "quote": null
+        },
+        "tax": {
+          "value": null,
+          "currency": null,
+          "page": null,
+          "quote": null
         },
         "line_total": {
           "value": 12,

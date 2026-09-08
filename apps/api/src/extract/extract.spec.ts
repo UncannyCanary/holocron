@@ -16,8 +16,8 @@ type Fixture = {
   output: unknown;
 };
 
-function fixture(type: DocumentType): Fixture {
-  const file = fileURLToPath(new URL(`fixtures/${type}.json`, import.meta.url));
+function fixture(name: DocumentType | 'invoice-gst'): Fixture {
+  const file = fileURLToPath(new URL(`fixtures/${name}.json`, import.meta.url));
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
@@ -77,6 +77,31 @@ describe('extract', () => {
     expect(invoice.line_items[1].line_total.value).toBe(12);
     expect(result.costUsd).toBeCloseTo(recorded.costUsd, 3);
     expect(result.model).toBe('claude-opus-5');
+  });
+
+  // A marketplace invoice prints its taxes one by one and its discounts on
+  // each line. They come back as a list and as line values, not added up.
+  it('keeps the tax lines and the line discounts of a GST invoice apart', async () => {
+    const recorded = fixture('invoice-gst');
+    const { client } = stubClient({ usage: recorded.usage, parsed_output: recorded.output });
+
+    const result = await extract(input('invoice'), { client, spentThisMonthUsd: async () => 0 });
+
+    expect(result.status).toBe('extracted');
+    if (result.status !== 'extracted') return;
+    const invoice = result.extraction as InvoiceExtraction;
+
+    expect(invoice.tax_lines).toHaveLength(2);
+    expect(invoice.tax_lines.map((line) => line.amount.value)).toEqual([43.4, 43.4]);
+    expect(invoice.tax_amount.value).toBeNull();
+    expect(invoice.taxable_value.value).toBe(482.2);
+    expect(invoice.line_items[0].discount.value).toBe(30);
+    expect(invoice.line_items[0].taxable_value.value).toBe(482.2);
+    // The line prints two taxes, not one figure, so the line's tax stays null
+    // rather than being added up.
+    expect(invoice.line_items[0].tax.value).toBeNull();
+    expect(invoice.line_items[0].line_total.value).toBe(569);
+    expect(invoice.total.currency).toBe('INR');
   });
 
   // The photo receipt has amounts in its text layer but no item names, so the

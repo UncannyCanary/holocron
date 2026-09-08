@@ -39,13 +39,16 @@ const SHARED_RULES = [
 const TYPE_RULES: Record<DocumentType, string> = {
   invoice: [
     'This document is an invoice.',
-    'List every line on it, in the order they are printed.',
+    "List every line on it, in the order they are printed. A line total is the figure in that line's own total column.",
     'A discount is a positive number. Leave it null when none is printed.',
+    'Taxes are listed one by one, as printed: SGST and CGST are two tax lines, VAT is one. Never add taxes together yourself. Give tax_amount only when the document prints one figure for the total tax.',
+    'When a line prints its own discount, taxable value, or tax, give them on that line. When the document prints a taxable value or a round off for the whole, give those too.',
   ].join('\n'),
   receipt: [
     'This document is a shop receipt.',
     'List every item line, in the order they are printed.',
     'A receipt often prints no quantity and no unit price. Leave those null rather than working them out.',
+    'Taxes are listed one by one, as printed. Give tax_amount only when the receipt prints one figure for the total tax.',
     'Cash and change are only the amounts the receipt prints as tendered and returned.',
   ].join('\n'),
   contract: [

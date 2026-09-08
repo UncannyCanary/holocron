@@ -61,7 +61,7 @@ describe('SeedService', () => {
     expect(afterSecondRun).toHaveLength(afterFirstRun.length);
 
     const countByType = (type: string) => afterSecondRun.filter((doc) => doc.type === type).length;
-    expect(countByType('invoice')).toBe(3);
+    expect(countByType('invoice')).toBe(4);
     expect(countByType('receipt')).toBe(2);
     expect(countByType('contract')).toBe(2);
 

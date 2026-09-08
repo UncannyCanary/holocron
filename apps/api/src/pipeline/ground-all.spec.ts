@@ -86,4 +86,25 @@ describe('groundAll', () => {
 
     expect(found.get('discount')).toBeNull();
   });
+
+  it('gives a buyer named twice the copy nearest the Bill To label', () => {
+    const labels = line(0, 'Bill To Ship To');
+    const names = line(1, 'Anil Rao Anil Rao');
+    // The second name sits under the second label, further along the line.
+    names[2].box.x0 = 0.5;
+    names[2].box.x1 = 0.56;
+    names[3].box.x0 = 0.57;
+    names[3].box.x1 = 0.62;
+    labels[2].box.x0 = 0.5;
+    labels[2].box.x1 = 0.56;
+    labels[3].box.x0 = 0.57;
+    labels[3].box.x1 = 0.6;
+    const pages = [
+      { number: 1, textLayer: { source: 'pdf-text' as const, spans: [...labels, ...names] } },
+    ];
+
+    const found = groundAll([flat('bill_to', 'Anil Rao')], pages);
+
+    expect(found.get('bill_to')?.box.x0).toBe(names[0].box.x0);
+  });
 });

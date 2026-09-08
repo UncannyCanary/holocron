@@ -428,3 +428,142 @@ describe('a document with nothing to check', () => {
     expect(runChecks('receipt', {})).toEqual([]);
   });
 });
+
+// A marketplace invoice: prices carry the tax inside, each line prints its
+// discount, its taxable value and its tax, and the foot prints the taxable
+// value, two tax lines, and the total. In rupees.
+function gstInvoice(changes: CheckFields = {}): CheckFields {
+  return {
+    vendor: words('Kaveri Home Goods LLP'),
+    invoice_number: words('KHG-2026-00417'),
+    issue_date: words('2026-05-06'),
+    'line_items.0.description': words('Steel water bottle, 1 L'),
+    'line_items.0.quantity': words('1'),
+    'line_items.0.unit_price': money(599, 'INR'),
+    'line_items.0.discount': money(30, 'INR'),
+    'line_items.0.taxable_value': money(482.2, 'INR'),
+    'line_items.0.tax': money(86.8, 'INR'),
+    'line_items.0.line_total': money(569, 'INR'),
+    'line_items.1.description': words('Handling fee'),
+    'line_items.1.quantity': words('1'),
+    'line_items.1.unit_price': money(30, 'INR'),
+    'line_items.1.discount': money(30, 'INR'),
+    'line_items.1.taxable_value': money(0, 'INR'),
+    'line_items.1.tax': money(0, 'INR'),
+    'line_items.1.line_total': money(0, 'INR'),
+    subtotal: money(569, 'INR'),
+    discount: money(60, 'INR'),
+    taxable_value: money(482.2, 'INR'),
+    'tax_lines.0.label': words('SGST'),
+    'tax_lines.0.amount': money(43.4, 'INR'),
+    'tax_lines.1.label': words('CGST'),
+    'tax_lines.1.amount': money(43.4, 'INR'),
+    tax_amount: money(null, 'INR'),
+    round_off: money(null, 'INR'),
+    total: money(569, 'INR'),
+    ...changes,
+  };
+}
+
+describe('a line with a discount and tax of its own', () => {
+  it('passes when the price carries the tax inside', () => {
+    expect(checkNamed(runChecks('invoice', gstInvoice()), 'line_math.0').passed).toBe(true);
+  });
+
+  it('passes when the tax is added after the price', () => {
+    const fields = gstInvoice({
+      'line_items.0.unit_price': money(482.2, 'INR'),
+      'line_items.0.discount': money(null, 'INR'),
+    });
+    expect(checkNamed(runChecks('invoice', fields), 'line_math.0').passed).toBe(true);
+  });
+
+  it('fails and says both readings when neither fits', () => {
+    const fields = gstInvoice({ 'line_items.0.line_total': money(600, 'INR') });
+    const result = checkNamed(runChecks('invoice', fields), 'line_math.0');
+    expect(result.passed).toBe(false);
+    expect(result.message).toBe(
+      'Line 1 says 600.00, but 1 times 599.00 less 30.00 is 569.00, or 655.80 with its tax.',
+    );
+    expect(result.flagged).toContain('line_items.0.discount');
+    expect(result.flagged).toContain('line_items.0.tax');
+  });
+
+  it('checks that the taxable value and the tax make the line total', () => {
+    expect(checkNamed(runChecks('invoice', gstInvoice()), 'line_tax.0').passed).toBe(true);
+    const wrong = gstInvoice({ 'line_items.0.tax': money(80, 'INR') });
+    const result = checkNamed(runChecks('invoice', wrong), 'line_tax.0');
+    expect(result.passed).toBe(false);
+    expect(result.blamed).toEqual(['line_items.0.line_total']);
+  });
+
+  it('does not run the taxable check on a line that prints no taxable value', () => {
+    expect(ran(runChecks('invoice', invoice()), 'line_tax.0')).toBe(false);
+  });
+});
+
+describe('the taxes at the foot', () => {
+  it('make the total together with the taxable value', () => {
+    const result = checkNamed(runChecks('invoice', gstInvoice()), 'total');
+    expect(result.passed).toBe(true);
+    expect(result.flagged).toEqual(['taxable_value', 'tax_lines.0.amount', 'tax_lines.1.amount']);
+  });
+
+  it('leaves the discount out when a taxable value is printed, since it is already inside', () => {
+    const result = checkNamed(
+      runChecks('invoice', gstInvoice({ discount: money(500, 'INR') })),
+      'total',
+    );
+    expect(result.passed).toBe(true);
+  });
+
+  it('counts a round off', () => {
+    const fields = gstInvoice({ round_off: money(0.4, 'INR'), total: money(569.4, 'INR') });
+    expect(checkNamed(runChecks('invoice', fields), 'total').passed).toBe(true);
+  });
+
+  it('adds the tax lines up when there is no one tax figure and no taxable value', () => {
+    const fields = gstInvoice({ taxable_value: money(null, 'INR'), subtotal: money(542.2, 'INR') });
+    const result = checkNamed(runChecks('invoice', fields), 'total');
+    // 542.20 + 86.80 - 60.00 = 569.00
+    expect(result.passed).toBe(true);
+    expect(result.message).toBe('The subtotal, tax and discount add up to the total.');
+  });
+
+  it('checks the tax lines against the tax total when both are printed', () => {
+    const fields = gstInvoice({ tax_amount: money(86.8, 'INR') });
+    expect(checkNamed(runChecks('invoice', fields), 'tax_lines').passed).toBe(true);
+    const wrong = gstInvoice({ tax_amount: money(90, 'INR') });
+    const result = checkNamed(runChecks('invoice', wrong), 'tax_lines');
+    expect(result.passed).toBe(false);
+    expect(result.blamed).toEqual(['tax_amount']);
+  });
+
+  it('does not run the tax lines check when only one of the two is printed', () => {
+    expect(ran(runChecks('invoice', gstInvoice()), 'tax_lines')).toBe(false);
+    expect(ran(runChecks('invoice', invoice()), 'tax_lines')).toBe(false);
+  });
+});
+
+describe('a subtotal printed before the line discounts', () => {
+  it('passes when the lines add up to it before their discounts', () => {
+    const fields = gstInvoice({ subtotal: money(629, 'INR') });
+    expect(checkNamed(runChecks('invoice', fields), 'subtotal').passed).toBe(true);
+  });
+
+  it('fails and says both sums when neither fits', () => {
+    const result = checkNamed(
+      runChecks('invoice', gstInvoice({ subtotal: money(600, 'INR') })),
+      'subtotal',
+    );
+    expect(result.passed).toBe(false);
+    expect(result.message).toBe(
+      'The lines add up to 569.00, or 629.00 before their discounts, but the subtotal says 600.00.',
+    );
+  });
+
+  it('does not accept the gross sum when no line prints a discount', () => {
+    const fields = invoice({ subtotal: money(55, 'USD') });
+    expect(checkNamed(runChecks('invoice', fields), 'subtotal').passed).toBe(false);
+  });
+});

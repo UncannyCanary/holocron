@@ -61,4 +61,48 @@ export const invoices = [
     total: 181.5,
     paymentTerms: "Payment within 30 days. Thank you.",
   },
+  // A marketplace tax invoice in the Indian GST layout: prices carry the tax
+  // inside, each line prints its discount, taxable value, and the two taxes,
+  // and the foot repeats them. Everyone named here is made up.
+  {
+    id: "invoice-4-gst",
+    layout: "gst",
+    seller: {
+      name: "Kaveri Home Goods LLP",
+      address: [
+        "Ship-from Address: 12, Hosur Main Road, Electronic City Phase II, Bengaluru, Karnataka 560100, IN-KA",
+      ],
+      gstin: "29AAAAA0000A1Z5",
+      pan: "AAAAA0000A",
+    },
+    buyer: {
+      name: "Anil Rao",
+      address: ["Flat 7B, Lakeview Residency", "Sarjapur Road, Bengaluru 560035", "Phone: xxxxxxxxxx"],
+    },
+    invoiceNumber: "KHG2026000417",
+    orderId: "OD119284736255100",
+    orderDate: "06-05-2026",
+    invoiceDate: "06-05-2026",
+    issueDate: "2026-05-06",
+    currency: "INR",
+    lineItems: [
+      {
+        product: "Bottles",
+        fsn: "BOTFYH7G2KQW",
+        hsn: "73239390",
+        description: "Steel Water Bottle 1 L",
+        quantity: 1,
+        gross: 599.0,
+        discount: 30.0,
+        taxable: 482.2,
+        sgst: 43.4,
+        cgst: 43.4,
+        lineTotal: 569.0,
+        taxRate: "9.0 %",
+      },
+      { description: "Handling Fee", quantity: 1, gross: 30.0, discount: 30.0, taxable: 0.0, sgst: 0.0, cgst: 0.0, lineTotal: 0.0 },
+    ],
+    totals: { quantity: 1, gross: 629.0, discount: 60.0, taxable: 482.2, sgst: 43.4, cgst: 43.4, lineTotal: 569.0 },
+    grandTotal: 569.0,
+  },
 ];

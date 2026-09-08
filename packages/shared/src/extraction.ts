@@ -37,12 +37,33 @@ export type DateField = z.infer<typeof dateFieldSchema>;
 export type MoneyField = z.infer<typeof moneyFieldSchema>;
 
 // One line on an invoice or a receipt. Quantity and unit price are often left
-// off a shop receipt, so both can be null while the line total stands.
+// off a shop receipt, so both can be null while the line total stands. Many
+// invoices, marketplace ones in particular, also print a discount, a taxable
+// value, and a tax on each line. Those are null when the line does not print
+// them.
 const lineItemSchema = z.object({
   description: textFieldSchema,
   quantity: numberFieldSchema,
   unit_price: moneyFieldSchema,
-  line_total: moneyFieldSchema,
+  discount: moneyFieldSchema.describe(
+    'The discount printed on this line, as a positive amount, or null.',
+  ),
+  taxable_value: moneyFieldSchema.describe(
+    'The amount tax is charged on for this line, when the line prints it, or null.',
+  ),
+  tax: moneyFieldSchema.describe(
+    'The tax on this line when the line prints one tax figure. Null when the line prints none, or prints several.',
+  ),
+  line_total: moneyFieldSchema.describe(
+    "The amount printed in the line's own total column, after any discount and tax on the line.",
+  ),
+});
+
+// One tax as the document prints it at the foot: SGST 43.40, CGST 43.40,
+// VAT 20% 22.97. A document with a single tax line still lists it here.
+const taxLineSchema = z.object({
+  label: textFieldSchema.describe('The name printed for the tax, such as CGST or VAT.'),
+  amount: moneyFieldSchema,
 });
 
 export const invoiceExtractionSchema = z.object({
@@ -51,10 +72,25 @@ export const invoiceExtractionSchema = z.object({
   invoice_number: textFieldSchema,
   issue_date: dateFieldSchema,
   due_date: dateFieldSchema,
-  subtotal: moneyFieldSchema,
-  discount: moneyFieldSchema.describe('The discount as a positive amount, or null.'),
-  tax_amount: moneyFieldSchema,
-  total: moneyFieldSchema,
+  subtotal: moneyFieldSchema.describe(
+    'The amount printed as the sum of the line totals, in the same column as the line totals. Null when no such amount is printed.',
+  ),
+  discount: moneyFieldSchema.describe(
+    'The discount printed at the foot, as a positive amount, or null.',
+  ),
+  taxable_value: moneyFieldSchema.describe(
+    'The amount tax is charged on for the whole document, when printed, or null.',
+  ),
+  tax_lines: z
+    .array(taxLineSchema)
+    .describe('Every tax printed at the foot, one entry each, never added together.'),
+  tax_amount: moneyFieldSchema.describe(
+    'The total tax only when the document prints one figure for it. Null otherwise.',
+  ),
+  round_off: moneyFieldSchema.describe(
+    'A rounding adjustment printed near the total, positive or negative, or null.',
+  ),
+  total: moneyFieldSchema.describe('The amount to pay.'),
   line_items: z.array(lineItemSchema),
 });
 
@@ -62,7 +98,12 @@ export const receiptExtractionSchema = z.object({
   merchant: textFieldSchema.describe('The shop or the seller.'),
   purchased_at: dateFieldSchema,
   subtotal: moneyFieldSchema,
-  tax_amount: moneyFieldSchema,
+  tax_lines: z
+    .array(taxLineSchema)
+    .describe('Every tax printed at the foot, one entry each, never added together.'),
+  tax_amount: moneyFieldSchema.describe(
+    'The total tax only when the receipt prints one figure for it. Null otherwise.',
+  ),
   total: moneyFieldSchema,
   cash: moneyFieldSchema.describe('The cash handed over, or null.'),
   change: moneyFieldSchema.describe('The change given back, or null.'),

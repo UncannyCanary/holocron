@@ -46,6 +46,8 @@ const LABELS: Record<string, string> = {
   subtotal: 'Subtotal',
   discount: 'Discount',
   tax_amount: 'Tax',
+  taxable_value: 'Taxable value',
+  round_off: 'Round off',
   total: 'Total',
   merchant: 'Merchant',
   purchased_at: 'Purchased',
@@ -63,7 +65,7 @@ const LABELS: Record<string, string> = {
 const SECTIONS: Record<DocumentType, { header: string[]; totals: string[] }> = {
   invoice: {
     header: ['vendor', 'bill_to', 'invoice_number', 'issue_date', 'due_date'],
-    totals: ['subtotal', 'discount', 'tax_amount', 'total'],
+    totals: ['subtotal', 'discount', 'taxable_value', 'tax_amount', 'round_off', 'total'],
   },
   receipt: {
     header: ['merchant', 'purchased_at'],
@@ -206,6 +208,10 @@ export function buildPanel(type: DocumentType, fields: DocumentField[]): Panel {
     const unitPrice = take(`line_items.${index}.unit_price`);
     const lineTotal = take(`line_items.${index}.line_total`);
 
+    const discount = take(`line_items.${index}.discount`);
+    const taxable = take(`line_items.${index}.taxable_value`);
+    const tax = take(`line_items.${index}.tax`);
+
     const counted = quantity?.value != null || unitPrice?.value != null;
     const segments: Segment[] = [];
     if (quantity !== null && counted) {
@@ -214,12 +220,23 @@ export function buildPanel(type: DocumentType, fields: DocumentField[]): Panel {
     if (unitPrice !== null && counted) {
       segments.push({ field: unitPrice, before: '× ', label: 'Unit price' });
     }
+    if (discount !== null && discount.value !== null) {
+      segments.push({ field: discount, before: '− ', label: 'Discount' });
+    }
     if (lineTotal !== null) {
       segments.push({
         field: lineTotal,
         before: segments.length === 0 ? '' : '= ',
         label: 'Line total',
       });
+    }
+    // The tax side of a line, shown after the total the way the document
+    // prints it, since the price usually already carries the tax.
+    if (taxable !== null && taxable.value !== null) {
+      segments.push({ field: taxable, before: 'taxable ', label: 'Taxable value' });
+    }
+    if (tax !== null && tax.value !== null) {
+      segments.push({ field: tax, before: 'tax ', label: 'Tax' });
     }
     if (segments.length === 0 && description === null) {
       return null;
@@ -239,6 +256,21 @@ export function buildPanel(type: DocumentType, fields: DocumentField[]): Panel {
     return field === null
       ? null
       : row({ key: name, label, labelField: null, segments: [{ field, before: '', label }] });
+  }
+
+  // One tax printed at the foot, named the way the document names it.
+  function taxRow(index: number): Row | null {
+    const label = take(`tax_lines.${index}.label`);
+    const amount = take(`tax_lines.${index}.amount`);
+    if (label === null && amount === null) {
+      return null;
+    }
+    return row({
+      key: `tax_lines.${index}`,
+      label: label?.value?.trim() || `Tax ${index + 1}`,
+      labelField: label,
+      segments: amount === null ? [] : [{ field: amount, before: '', label: 'Amount' }],
+    });
   }
 
   function termRow(index: number): Row | null {
@@ -283,6 +315,10 @@ export function buildPanel(type: DocumentType, fields: DocumentField[]): Panel {
     group(
       'Defined terms',
       indicesOf(fields, 'defined_terms').map((index) => termRow(index)),
+    ),
+    group(
+      'Taxes',
+      indicesOf(fields, 'tax_lines').map((index) => taxRow(index)),
     ),
     group(
       'Totals',

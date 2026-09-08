@@ -11,6 +11,26 @@ function rowOf(name: string): string | null {
   return found === null ? null : found[1];
 }
 
+// The words a document prints beside some header values. When the same name
+// appears twice, such as a buyer who is billed and shipped to, the one
+// nearest its own label is the one meant.
+const LABELS: Record<string, string[]> = {
+  bill_to: ['Bill To', 'Bill to', 'Billed to', 'Invoice to', 'Customer'],
+  vendor: ['Sold By', 'Sold by', 'Seller', 'From'],
+  merchant: ['Sold By', 'Sold by', 'Seller'],
+};
+
+// Where a field's label sits on the page, when the page prints one.
+function labelBoxOf(name: string, page: number, pages: Page[]): Box | null {
+  for (const phrase of LABELS[name] ?? []) {
+    const found = ground({ value: phrase, quote: phrase, page }, pages);
+    if (found !== null) {
+      return found.box;
+    }
+  }
+  return null;
+}
+
 function sameBox(left: Box, right: Box): boolean {
   return (
     left.x0 === right.x0 && left.y0 === right.y0 && left.x1 === right.x1 && left.y1 === right.y1
@@ -49,6 +69,7 @@ export function groundAll(flats: FlatField[], pages: Page[]): Map<string, Ground
       others.push({ name: each.name, box: other.box });
     });
 
+    const label = row === null ? labelBoxOf(flat.name, page, pages) : null;
     found.set(
       flat.name,
       ground(
@@ -59,7 +80,9 @@ export function groundAll(flats: FlatField[], pages: Page[]): Map<string, Ground
           avoid: others.map((each) => each.box),
           near:
             row === null
-              ? []
+              ? label === null
+                ? []
+                : [label]
               : others.filter((each) => rowOf(each.name) === row).map((each) => each.box),
         },
         pages,

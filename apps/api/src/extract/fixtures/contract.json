@@ -12,14 +12,14 @@
       "ephemeral_5m_input_tokens": 1934,
       "ephemeral_1h_input_tokens": 0
     },
-    "output_tokens": 776,
+    "output_tokens": 857,
     "output_tokens_details": {
       "thinking_tokens": 0
     },
     "service_tier": "standard",
     "inference_geo": "global"
   },
-  "costUsd": 0.0862,
+  "costUsd": 0.0882,
   "output": {
     "title": {
       "value": "Mutual Non-Disclosure Agreement",
@@ -80,7 +80,7 @@
         "use": {
           "value": "MNDA",
           "page": 3,
-          "quote": "This MNDA"
+          "quote": "This MNDA and all matters relating hereto are governed by"
         }
       },
       {
@@ -92,7 +92,7 @@
         "use": {
           "value": "Disclosing Party",
           "page": 3,
-          "quote": "the Disclosing Party"
+          "quote": "the Disclosing Party is entitled to seek appropriate equitable relief"
         }
       },
       {
@@ -104,7 +104,7 @@
         "use": {
           "value": "Receiving Party",
           "page": 2,
-          "quote": "The Receiving Party shall"
+          "quote": "The Receiving Party shall: (a) use Confidential Information solely for the Purpose"
         }
       },
       {
@@ -116,7 +116,7 @@
         "use": {
           "value": "Confidential Information",
           "page": 3,
-          "quote": "disclose Confidential Information"
+          "quote": "Neither party has an obligation under this MNDA to disclose Confidential Information"
         }
       },
       {
@@ -128,7 +128,7 @@
         "use": {
           "value": "Cover Page",
           "page": 3,
-          "quote": "the Cover Page"
+          "quote": "MNDA (including the Cover Page) constitutes the entire agreement"
         }
       }
     ]

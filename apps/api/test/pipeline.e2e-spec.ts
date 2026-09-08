@@ -40,12 +40,13 @@ type Sample = { type: DocumentType; file: string };
 // One sample per type: the ones task 7 recorded a real model answer for.
 const SAMPLES: Sample[] = [
   { type: 'invoice', file: 'invoices/invoice-3-planted-error.pdf' },
+  { type: 'invoice', file: 'invoices/invoice-4-gst.pdf' },
   { type: 'receipt', file: 'receipts/cord-receipt-1.jpg' },
   { type: 'contract', file: 'contracts/common-paper-mutual-nda.pdf' },
 ];
 
-function recordedAnswer(type: DocumentType): { usage: unknown; output: unknown } {
-  const file = fileURLToPath(new URL(`../src/extract/fixtures/${type}.json`, import.meta.url));
+function recordedAnswer(name: string): { usage: unknown; output: unknown } {
+  const file = fileURLToPath(new URL(`../src/extract/fixtures/${name}.json`, import.meta.url));
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
@@ -66,8 +67,17 @@ function fixtureClient(): Anthropic {
   return {
     messages: {
       countTokens: async () => ({ input_tokens: 3000 }),
-      parse: async (body: { system: Array<{ text: string }> }) => {
-        const answer = recordedAnswer(typeOf(body.system[0].text));
+      parse: async (body: {
+        system: Array<{ text: string }>;
+        messages: Array<{ content: Array<{ type: string; text?: string }> }>;
+      }) => {
+        const type = typeOf(body.system[0].text);
+        // Two invoices share one type. The GST one is the one whose page
+        // words mention a GSTIN.
+        const pageWords = body.messages[0].content.map((block) => block.text ?? '').join('\n');
+        const answer = recordedAnswer(
+          type === 'invoice' && pageWords.includes('GSTIN') ? 'invoice-gst' : type,
+        );
         return { stop_reason: 'end_turn', usage: answer.usage, parsed_output: answer.output };
       },
     },
@@ -78,6 +88,8 @@ function fixtureClient(): Anthropic {
 // checks use in code.
 const CHECK_NAMES: Record<string, string> = {
   'line quantity times price equals line total': 'line_math',
+  'line taxable value plus tax equals line total': 'line_tax',
+  'taxable value plus taxes equals total': 'total',
   'sum of line totals equals subtotal': 'subtotal',
   'subtotal plus tax minus discount equals total': 'total',
   'issue date on or before due date': 'date_order',
@@ -101,6 +113,12 @@ function wantedValues(expected: {
 
   for (const [name, node] of Object.entries(expected.fields ?? {})) {
     if (name === 'defined_terms') continue;
+    if (name === 'tax_lines' && Array.isArray(node)) {
+      node.forEach((item, index) => {
+        wanted[`tax_lines.${index}.amount`] = (item as { amount: number }).amount;
+      });
+      continue;
+    }
     if (Array.isArray(node)) {
       node.forEach((item, index) => {
         wanted[`${name}.${index}`] = (item as { value: string }).value;
@@ -111,7 +129,15 @@ function wantedValues(expected: {
   }
 
   (expected.line_items ?? []).forEach((line, index) => {
-    for (const part of ['description', 'quantity', 'unit_price', 'line_total']) {
+    for (const part of [
+      'description',
+      'quantity',
+      'unit_price',
+      'discount',
+      'taxable_value',
+      'tax',
+      'line_total',
+    ]) {
       if (line[part] !== undefined) {
         wanted[`line_items.${index}.${part}`] = line[part] as string | number;
       }
@@ -137,7 +163,7 @@ describe('the pipeline, end to end', () => {
   let cookie: string;
 
   // Every document this test made, by type.
-  const documents = new Map<DocumentType, string>();
+  const documents = new Map<string, string>();
   let uploadedId: string;
 
   beforeAll(async () => {
@@ -182,7 +208,7 @@ describe('the pipeline, end to end', () => {
             filePath: samplesPath(sample.file),
           })
           .returning();
-        documents.set(sample.type, doc.id);
+        documents.set(sample.type === 'invoice' ? sample.file : sample.type, doc.id);
 
         await pipeline.run(doc.id);
 
@@ -255,7 +281,7 @@ describe('the pipeline, end to end', () => {
   }
 
   it('boxes the invoice values it found on the page, and contradicts the planted error', async () => {
-    const documentId = documents.get('invoice') as string;
+    const documentId = documents.get('invoices/invoice-3-planted-error.pdf') as string;
     const fields = await db.select().from(field).where(eq(field.documentId, documentId));
     const byName = new Map(fields.map((row) => [row.name, row]));
 
@@ -309,7 +335,7 @@ describe('the pipeline, end to end', () => {
 
   it('finds the defined terms the contract expected file names', async () => {
     const documentId = documents.get('contract') as string;
-    const expected = expectedFor(SAMPLES[2]);
+    const expected = expectedFor(SAMPLES.find((sample) => sample.type === 'contract') as Sample);
     const fields = await db.select().from(field).where(eq(field.documentId, documentId));
     const terms = fields.filter((row) => /^defined_terms\.\d+\.term$/.test(row.name));
 
@@ -322,7 +348,7 @@ describe('the pipeline, end to end', () => {
   });
 
   it('saves a correction, runs every check again, and logs what changed', async () => {
-    const documentId = documents.get('invoice') as string;
+    const documentId = documents.get('invoices/invoice-3-planted-error.pdf') as string;
     const [wrong] = await db
       .select()
       .from(field)

@@ -6,7 +6,7 @@ also list which checks should pass or fail.
 
 ## Invoices (`invoices/`)
 
-Three invoices, written by us. The JSON model for each one is in `models.mjs`. Run
+Four invoices, written by us. The JSON model for each one is in `models.mjs`. Run
 `node samples/invoices/generate.mjs` to render them again.
 
 - `invoice-1-clean.pdf`: everything adds up. Has a discount line.
@@ -17,6 +17,10 @@ Three invoices, written by us. The JSON model for each one is in `models.mjs`. R
   printed one, so the line math check and the subtotal check both fail. This is the same
   scenario as the review screen mockup at
   `.scratch/holocron/design/review-screen/Main.dc.html`.
+- `invoice-4-gst.pdf`: an Indian marketplace tax invoice. Prices carry the tax inside,
+  each line prints its discount, taxable value, SGST and CGST, and the foot repeats them
+  with a grand total in rupees. Everything adds up. The seller, the buyer, the addresses,
+  and the tax numbers are made up.
 
 We own this content. No licence needed.
 
