@@ -1,5 +1,6 @@
 import type { Box, PageTextLayer, Span } from '@holocron/shared';
 import { unionBox } from '../pages/boxes.js';
+import { similarity } from '../text/similarity.js';
 
 // Grounding is the step that decides whether a value the model gave us is
 // really on the page. It never trusts the model's own coordinates. It takes
@@ -88,23 +89,6 @@ function fold(text: string): string {
 function mostlyDigits(text: string): boolean {
   const digits = [...text].filter((letter) => /\p{N}/u.test(letter)).length;
   return digits * 2 >= text.length;
-}
-
-function editDistance(a: string, b: string): number {
-  let row = Array.from({ length: b.length + 1 }, (_, index) => index);
-  for (let i = 1; i <= a.length; i += 1) {
-    const next = [i];
-    for (let j = 1; j <= b.length; j += 1) {
-      next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    }
-    row = next;
-  }
-  return row[b.length];
-}
-
-function similarity(a: string, b: string): number {
-  const longest = Math.max(a.length, b.length);
-  return longest === 0 ? 0 : 1 - editDistance(a, b) / longest;
 }
 
 // The words of a run of spans, run together, with a note of which span each
