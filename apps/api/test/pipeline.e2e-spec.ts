@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -494,6 +494,30 @@ describe('the pipeline, end to end', () => {
     },
     SLOW,
   );
+
+  it('deletes a document along with its rows and files', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/documents')
+      .set('Cookie', cookie)
+      .field('type', 'invoice')
+      .attach('file', samplesPath('invoices/invoice-2-clean.pdf'));
+    expect(res.status).toBe(201);
+    const [row] = await db.select().from(document).where(eq(document.id, res.body.id));
+    expect(existsSync(row.filePath)).toBe(true);
+
+    const gone = await request(app.getHttpServer())
+      .delete(`/api/documents/${res.body.id}`)
+      .set('Cookie', cookie);
+    expect(gone.status).toBe(204);
+
+    expect(await db.select().from(document).where(eq(document.id, res.body.id))).toHaveLength(0);
+    expect(existsSync(row.filePath)).toBe(false);
+
+    const again = await request(app.getHttpServer())
+      .delete(`/api/documents/${res.body.id}`)
+      .set('Cookie', cookie);
+    expect(again.status).toBe(404);
+  });
 
   it(
     'runs the uploaded document the same way the worker would',

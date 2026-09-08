@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { correctField, getDocument, retryDocument } from './api';
+import { correctField, deleteDocument, getDocument, retryDocument } from './api';
 
 const STILL_WORKING = new Set(['queued', 'processing']);
 
@@ -36,6 +36,18 @@ export function useRetryDocument() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => retryDocument(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
+// Removes a document. The list is asked for again so the queue and the
+// table drop it at once.
+export function useDeleteDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteDocument(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['documents'] });
     },

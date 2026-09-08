@@ -1,8 +1,9 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import type { DocumentType } from '@holocron/shared';
 import {
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpException,
@@ -22,6 +23,7 @@ import { DB } from '../db/db.module.js';
 import { check, document, field, page, run, runStep } from '../db/schema.js';
 // biome-ignore lint/style/useImportType: Nest reads this at runtime to inject it; a type-only import breaks that.
 import { JobsService } from '../jobs/jobs.module.js';
+import { dataPath } from '../paths.js';
 import { NO_WORKSPACE_MESSAGE } from '../workspace/workspace.controller.js';
 import {
   counterpartyOf,
@@ -223,6 +225,33 @@ export class DocumentsController {
   // their timings and errors. The pages and the run belong to the canonical
   // row, the same as the review screen's own detail, since a sample's runs
   // are read once and shared.
+  // Takes a document out of the workspace: its fields, checks, runs, and
+  // corrections go with it. An uploaded file's pages and the file itself go
+  // too, unless another document split out of the same file still needs
+  // them. A sample's copy is only the copy: the shared pages stay for
+  // everyone else.
+  @Delete(':id')
+  @HttpCode(204)
+  async remove(@Req() req: Request, @Param('id') id: string): Promise<void> {
+    const doc = await this.ownedDocument(req, id);
+
+    const ownsFile = doc.documentId === null && doc.sourceId === null;
+    const [sibling] = ownsFile
+      ? await this.db
+          .select({ id: document.id })
+          .from(document)
+          .where(eq(document.sourceId, doc.id))
+          .limit(1)
+      : [];
+
+    await this.db.delete(document).where(eq(document.id, doc.id));
+
+    if (ownsFile && !sibling) {
+      await rm(dataPath('pages', doc.id), { recursive: true, force: true });
+      await rm(path.dirname(doc.filePath), { recursive: true, force: true });
+    }
+  }
+
   @Get(':id/timeline')
   async timeline(@Req() req: Request, @Param('id') id: string) {
     const doc = await this.ownedDocument(req, id);

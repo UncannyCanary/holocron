@@ -168,6 +168,11 @@ export function retryDocument(id: string): Promise<{ status: DocumentStatus }> {
   return request(`/documents/${id}/retry`, { method: 'POST' });
 }
 
+// Takes a document out of the workspace for good.
+export function deleteDocument(id: string): Promise<void> {
+  return request(`/documents/${id}`, { method: 'DELETE' });
+}
+
 export type RunStep = {
   name: string;
   startedAt: string | null;

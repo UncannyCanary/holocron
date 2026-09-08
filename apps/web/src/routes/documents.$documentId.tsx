@@ -9,7 +9,12 @@ import { type DocumentField, type DocumentSummary, messageOf } from '../lib/api'
 import { sortWorstFirst, stateOf } from '../lib/document-display';
 import { agoText, durationText } from '../lib/relative-time';
 import { buildPanel, fieldText, type Panel } from '../lib/review-layout';
-import { useCorrectField, useDocument, useRetryDocument } from '../lib/use-document';
+import {
+  useCorrectField,
+  useDeleteDocument,
+  useDocument,
+  useRetryDocument,
+} from '../lib/use-document';
 import { useDocuments } from '../lib/use-documents';
 import { useShortcuts } from '../lib/use-shortcuts';
 
@@ -46,6 +51,15 @@ function ReviewScreen({ documentId }: { documentId: string }) {
   const { data: documents = [] } = useDocuments();
   const correct = useCorrectField();
   const retry = useRetryDocument();
+  const remove = useDeleteDocument();
+
+  // Asks once, in plain words, then goes back to the queue. A sample's copy
+  // can go too; the sample itself stays for the next workspace.
+  function deleteThis() {
+    const name = summary?.name ?? 'this document';
+    if (!window.confirm(`Delete ${name} from this workspace? This cannot be undone.`)) return;
+    remove.mutate(documentId, { onSuccess: () => navigate({ to: '/queue' }) });
+  }
 
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ fieldId: string; value: string } | null>(null);
@@ -161,6 +175,14 @@ function ReviewScreen({ documentId }: { documentId: string }) {
         >
           Timeline
         </Link>
+        <button
+          type="button"
+          className="cursor-pointer text-note text-needs-review"
+          disabled={remove.isPending}
+          onClick={deleteThis}
+        >
+          {remove.isPending ? 'Deleting…' : 'Delete'}
+        </button>
         {place >= 0 && (
           <span className="text-xs text-ink-quiet">
             {place + 1} of {queue.length} in the queue
