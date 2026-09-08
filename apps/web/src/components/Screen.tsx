@@ -11,18 +11,22 @@ export function Screen({
   breadcrumb,
   actions,
   hints,
+  // A screen that fills the window exactly, for one with panels that scroll
+  // on their own. Every other screen grows with what is on it.
+  fill = false,
   children,
 }: {
   breadcrumb?: string;
   actions?: ReactNode;
   hints: Hint[];
+  fill?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className={`flex flex-col ${fill ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <TopBar breadcrumb={breadcrumb} actions={actions} />
-      <main className="flex flex-1 flex-col">{children}</main>
-      <footer className="flex h-10 items-center gap-5 border-t border-line bg-hint-bar px-5">
+      <main className={`flex flex-1 flex-col ${fill ? 'min-h-0' : ''}`}>{children}</main>
+      <footer className="flex h-10 flex-none items-center gap-5 border-t border-line bg-hint-bar px-5">
         {hints.map((hint) => (
           <span key={hint.label} className="hint">
             {hint.keys.map((key) => (

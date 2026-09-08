@@ -1,42 +1,10 @@
+import { decimalsOf } from '@holocron/shared';
+
 // Money is compared in the currency's smallest unit and never as a decimal
 // number, because a computer cannot hold 0.1 exactly. An amount in dollars
 // becomes a whole number of cents first, and every tolerance is counted in
-// those whole units.
-
-// Most currencies split into 100 smaller units, so their smallest unit is a
-// hundredth. These do not split at all: the smallest unit is one rupiah, one
-// yen, one won.
-const NO_DECIMALS = new Set([
-  'CLP',
-  'IDR',
-  'ISK',
-  'JPY',
-  'KRW',
-  'PYG',
-  'RWF',
-  'UGX',
-  'VND',
-  'VUV',
-  'XAF',
-  'XOF',
-]);
-
-// These split into 1000.
-const THREE_DECIMALS = new Set(['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND']);
-
-// How many digits after the point the currency uses. An amount with no
-// currency is treated as a hundredth, which is what nearly every document we
-// take is written in.
-export function decimalsOf(currency: string | null): number {
-  const code = (currency ?? '').trim().toUpperCase();
-  if (NO_DECIMALS.has(code)) {
-    return 0;
-  }
-  if (THREE_DECIMALS.has(code)) {
-    return 3;
-  }
-  return 2;
-}
+// those whole units. How many digits a currency uses, and how an amount is
+// written out for a person, are shared with the web app.
 
 // The amount as a whole number of the smallest unit: 12.34 dollars is 1234.
 export function minorUnits(amount: number, currency: string | null): number {
@@ -58,10 +26,4 @@ export function within(
   currency: string | null,
 ): boolean {
   return Math.abs(minorUnits(left, currency) - minorUnits(right, currency)) <= allowance;
-}
-
-// An amount written out for a person to read, with the digits its currency
-// uses.
-export function moneyText(amount: number, currency: string | null): string {
-  return amount.toFixed(decimalsOf(currency));
 }

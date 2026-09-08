@@ -1,5 +1,4 @@
-import type { DocumentType } from '@holocron/shared';
-import { moneyText } from '../checks/money.js';
+import { type DocumentType, moneyText } from '@holocron/shared';
 import {
   type DocumentTrust,
   type FieldTrust,

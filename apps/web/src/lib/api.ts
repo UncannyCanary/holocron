@@ -84,3 +84,63 @@ export function uploadDocument(
   body.append('type', type);
   return request('/documents', { method: 'POST', body });
 }
+
+export type FieldTrust = 'verified' | 'unverifiable' | 'contradicted' | 'corrected';
+
+// Where a value sits on its page, from 0 to 1, origin top left.
+export type Box = { x0: number; y0: number; x1: number; y1: number };
+
+export type DocumentField = {
+  id: string;
+  // The path through the extraction schema: total, line_items.0.line_total.
+  name: string;
+  value: string | null;
+  currency: string | null;
+  trust: FieldTrust;
+  quote: string | null;
+  // Both null together. No box means the value was not found on the page.
+  page: number | null;
+  box: Box | null;
+};
+
+export type DocumentCheck = {
+  id: string;
+  name: string;
+  passed: boolean;
+  message: string;
+  // The fields the check works out, and the fields that fed it.
+  blamedFieldIds: string[];
+  flaggedFieldIds: string[];
+};
+
+export type DocumentPage = {
+  number: number;
+  widthPx: number;
+  heightPx: number;
+  imageUrl: string;
+};
+
+// One document with everything the review screen shows.
+export type DocumentDetail = {
+  id: string;
+  type: DocumentType;
+  status: DocumentStatus;
+  fields: DocumentField[];
+  checks: DocumentCheck[];
+  pages: DocumentPage[];
+  run: { startedAt: string; endedAt: string } | null;
+};
+
+export function getDocument(id: string): Promise<DocumentDetail> {
+  return request(`/documents/${id}`);
+}
+
+// Saves a person's value over the model's. The API re-runs every check and
+// says which ones turned around.
+export function correctField(fieldId: string, value: string): Promise<{ changedChecks: string[] }> {
+  return request(`/fields/${fieldId}/correction`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ value }),
+  });
+}

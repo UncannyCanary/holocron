@@ -14,6 +14,13 @@ function isTyping(target: EventTarget | null): boolean {
   return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable;
 }
 
+// Enter and Space on a focused button or link press that element. They are
+// its keys, not the screen's, or one press would do two things at once.
+function pressesTheElement(target: EventTarget | null, key: string): boolean {
+  if (key !== 'enter' && key !== ' ') return false;
+  return target instanceof HTMLElement && target.closest('button, a') !== null;
+}
+
 export function useShortcuts(shortcuts: Shortcuts): void {
   // Always the latest handlers, without taking the listener down and putting
   // it back every time the screen renders.
@@ -30,6 +37,7 @@ export function useShortcuts(shortcuts: Shortcuts): void {
       if (isTyping(event.target)) return;
 
       const key = event.key.toLowerCase();
+      if (pressesTheElement(event.target, key)) return;
       const now = Date.now();
       const chord = last !== null && now - last.at < CHORD_WINDOW_MS ? `${last.key} ${key}` : null;
       last = { key, at: now };

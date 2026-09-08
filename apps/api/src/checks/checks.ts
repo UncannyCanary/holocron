@@ -1,6 +1,6 @@
-import type { DocumentType } from '@holocron/shared';
+import { type DocumentType, moneyText } from '@holocron/shared';
 import { similarity } from '../text/similarity.js';
-import { majorUnits, minorUnits, moneyText, within } from './money.js';
+import { majorUnits, minorUnits, within } from './money.js';
 
 // The checks are the questions a document answers about itself. Does the line
 // math work? Do the lines add up to the subtotal? Is the due date after the
