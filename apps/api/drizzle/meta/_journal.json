@@ -8,6 +8,13 @@
       "when": 1788788969616,
       "tag": "0000_smart_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788844429065,
+      "tag": "0001_add_field_currency_and_correction_checks",
+      "breakpoints": true
     }
   ]
 }

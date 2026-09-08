@@ -5,6 +5,8 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { DB } from '../db/db.module.js';
 import { document, page } from '../db/schema.js';
+// biome-ignore lint/style/useImportType: Nest reads this at runtime to inject it; a type-only import breaks that.
+import { JobsService } from '../jobs/jobs.module.js';
 import { buildPages } from '../pages/pages.js';
 import { dataPath, samplesPath } from '../paths.js';
 
@@ -23,7 +25,10 @@ const SAMPLE_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png']);
 export class SeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeedService.name);
 
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    private readonly jobs: JobsService,
+  ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     if (process.env.PROCESS_ROLE === 'worker' || process.env.NODE_ENV === 'test') {
@@ -47,6 +52,26 @@ export class SeedService implements OnApplicationBootstrap {
         if (!SAMPLE_EXTENSIONS.has(path.extname(name).toLowerCase())) continue;
         await this.seedOne(path.join(dir, name), type);
       }
+    }
+
+    await this.queueUnread();
+  }
+
+  // Every shared sample that has not been read yet goes on the queue. A
+  // sample is read once and its fields and checks are copied into each new
+  // workspace, so this does nothing on a restart once they are ready. A
+  // sample parked by the spending cap is picked up again next time.
+  private async queueUnread(): Promise<void> {
+    const waiting = await this.db
+      .select({ id: document.id })
+      .from(document)
+      .where(and(isNull(document.workspaceId), eq(document.status, 'queued')));
+
+    for (const doc of waiting) {
+      await this.jobs.sendProcessDocument({ documentId: doc.id, workspaceId: null });
+    }
+    if (waiting.length > 0) {
+      this.logger.log(`Queued ${waiting.length} sample(s) to be read.`);
     }
   }
 

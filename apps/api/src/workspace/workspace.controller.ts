@@ -20,7 +20,7 @@ import { clientIp } from '../net/client-ip.js';
 // biome-ignore lint/style/useImportType: Nest reads this at runtime to inject it; a type-only import breaks that.
 import { WorkspaceService } from './workspace.service.js';
 
-const NO_WORKSPACE_MESSAGE = 'There is no workspace yet.';
+export const NO_WORKSPACE_MESSAGE = 'There is no workspace yet.';
 
 @Controller('workspace')
 export class WorkspaceController {

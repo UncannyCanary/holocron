@@ -1,3 +1,4 @@
+import { statfs } from 'node:fs/promises';
 import { LIMITS, MESSAGES } from '@holocron/shared';
 import { and, eq, gte, isNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
@@ -11,6 +12,22 @@ export function checkFileSize(bytes: number): LimitCheck {
     return { ok: false, message: MESSAGES.fileTooLarge };
   }
   return { ok: true };
+}
+
+// At least 2 GB left on the data volume. Postgres keeps its tables on the
+// same disk, so filling it up would stop the whole site, not just uploads.
+export function checkFreeSpace(freeBytes: number): LimitCheck {
+  if (freeBytes < LIMITS.minFreeSpaceBytes) {
+    return { ok: false, message: MESSAGES.outOfRoom };
+  }
+  return { ok: true };
+}
+
+// The same check, asking the disk itself. The folder has to exist already.
+// bavail is the room an ordinary user may have, which is what we can use.
+export async function checkFreeSpaceOn(dir: string): Promise<LimitCheck> {
+  const disk = await statfs(dir);
+  return checkFreeSpace(disk.bavail * disk.bsize);
 }
 
 // 20 pages per document, checked once the page count is known.

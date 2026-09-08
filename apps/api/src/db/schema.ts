@@ -95,6 +95,10 @@ export const field = pgTable('field', {
     .references(() => document.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   value: text('value'),
+  // The currency of a money value, such as USD. Null on everything else. It
+  // is kept here beside the value because the one currency check has nothing
+  // to compare without it.
+  currency: text('currency'),
   pageId: uuid('page_id').references(() => page.id, { onDelete: 'set null' }),
   x0: real('x0'),
   y0: real('y0'),
@@ -120,7 +124,8 @@ export const check = pgTable('check', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-// A person changing a field. Keeps the old value, the new value, and when.
+// A person changing a field. Keeps the old value, the new value, when, and
+// the names of the checks whose answer the change turned around.
 export const correction = pgTable('correction', {
   id: uuid('id').primaryKey().defaultRandom(),
   fieldId: uuid('field_id')
@@ -128,6 +133,7 @@ export const correction = pgTable('correction', {
     .references(() => field.id, { onDelete: 'cascade' }),
   oldValue: text('old_value'),
   newValue: text('new_value').notNull(),
+  changedChecks: text('changed_checks').array().notNull().default(sql`'{}'::text[]`),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -4,7 +4,12 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDb } from '../db/client.js';
 import { document, workspace } from '../db/schema.js';
-import { checkDailyUploadQuota, checkFileSize, checkPageCount } from './upload-limits.js';
+import {
+  checkDailyUploadQuota,
+  checkFileSize,
+  checkFreeSpace,
+  checkPageCount,
+} from './upload-limits.js';
 
 describe('upload limits', () => {
   it('accepts a file under 10 MB', () => {
@@ -26,6 +31,17 @@ describe('upload limits', () => {
     expect(checkPageCount(21)).toEqual({
       ok: false,
       message: 'This file has more than 20 pages.',
+    });
+  });
+
+  it('accepts an upload while there is more than 2 GB left', () => {
+    expect(checkFreeSpace(3 * 1024 * 1024 * 1024)).toEqual({ ok: true });
+  });
+
+  it('refuses an upload when the disk is nearly full', () => {
+    expect(checkFreeSpace(1024 * 1024 * 1024)).toEqual({
+      ok: false,
+      message: 'Holocron is out of room for new files right now. The sample documents still work.',
     });
   });
 

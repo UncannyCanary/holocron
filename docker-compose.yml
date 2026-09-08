@@ -40,6 +40,9 @@ services:
     environment:
       PROCESS_ROLE: worker
       DATABASE_URL: postgres://holocron:holocron@postgres:5432/holocron
+      # Only the worker calls the model, so only the worker gets the key.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      EXTRACTION_MODEL: ${EXTRACTION_MODEL:-}
     depends_on:
       postgres:
         condition: service_healthy

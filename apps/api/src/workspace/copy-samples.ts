@@ -30,6 +30,7 @@ export async function copySampleDocumentsIntoWorkspace(db: Db, workspaceId: stri
           documentId: copy.id,
           name: original.name,
           value: original.value,
+          currency: original.currency,
           pageId: original.pageId,
           x0: original.x0,
           y0: original.y0,

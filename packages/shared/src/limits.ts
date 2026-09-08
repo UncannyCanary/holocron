@@ -11,6 +11,10 @@ export const LIMITS = {
   lockoutMinutes: 15,
   workspaceUntouchedDays: 14,
   monthlyModelSpendUsd: 15,
+  // Postgres shares the data volume with the files, so a full disk stops
+  // everything, not just uploads. New files are refused while there is less
+  // than this much room left.
+  minFreeSpaceBytes: 2 * 1024 * 1024 * 1024,
 } as const;
 
 export const MESSAGES = {
@@ -22,6 +26,7 @@ export const MESSAGES = {
   tooManyUploadsToday: `This workspace has used its ${LIMITS.uploadsPerWorkspacePerDay} uploads for today. The sample documents still work.`,
   fileTooLarge: 'This file is over the 10 MB limit.',
   tooManyPages: `This file has more than ${LIMITS.maxPagesPerDocument} pages.`,
+  outOfRoom: 'Holocron is out of room for new files right now. The sample documents still work.',
   spendCapReached:
     'Holocron is at its monthly processing budget. You can still review every document already here.',
 } as const;

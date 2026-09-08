@@ -11,3 +11,7 @@ export function createDb(databaseUrl = process.env.DATABASE_URL) {
 }
 
 export type Db = ReturnType<typeof createDb>;
+
+// The handle a db.transaction callback is given. Both the database work and
+// the queue insert take one of these, so they commit together.
+export type DbTransaction = Parameters<Parameters<Db['transaction']>[0]>[0];

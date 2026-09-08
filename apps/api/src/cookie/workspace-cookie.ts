@@ -79,3 +79,10 @@ export function parseCookieHeader(header: string | undefined): Record<string, st
   }
   return cookies;
 }
+
+// The workspace this browser already has, or nothing. Every route that acts
+// on a workspace's own documents starts here.
+export function workspaceIdFromCookieHeader(header: string | undefined): string | null {
+  const payload = verifyWorkspaceCookie(parseCookieHeader(header)[WORKSPACE_COOKIE_NAME]);
+  return payload?.workspaceId ?? null;
+}

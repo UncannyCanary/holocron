@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDb } from '../db/client.js';
 import { document, page } from '../db/schema.js';
+import type { JobsService } from '../jobs/jobs.module.js';
 import { stopOcrWorker } from '../pages/ocr-pages.js';
 import { samplesPath } from '../paths.js';
 import { SeedService } from './seed.service.js';
@@ -15,7 +16,15 @@ describe('SeedService', () => {
   const db = createDb(
     process.env.DATABASE_URL ?? 'postgres://holocron:holocron@localhost:5432/holocron',
   );
-  const seed = new SeedService(db);
+  // Seeding puts every unread sample on the queue. This test is about the
+  // rows, so the jobs are counted and thrown away.
+  const queued: string[] = [];
+  const jobs = {
+    sendProcessDocument: async ({ documentId }: { documentId: string }) => {
+      queued.push(documentId);
+    },
+  } as unknown as JobsService;
+  const seed = new SeedService(db, jobs);
 
   beforeAll(async () => {
     await migrate(db, {
