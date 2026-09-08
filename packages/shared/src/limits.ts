@@ -2,7 +2,10 @@
 // each one is hit. Both apps import this file so the number enforced and the
 // number in the message can never drift apart.
 export const LIMITS = {
-  requestsPerIpPerMinute: 60,
+  // Screens poll every 2 seconds while a document is being read, and the
+  // review screen runs two polls at once, so one honest visitor can send 60
+  // a minute on their own. This stays well above that and still stops a flood.
+  requestsPerIpPerMinute: 240,
   workspacesPerIpPerHour: 3,
   uploadsPerWorkspacePerDay: 10,
   maxFileSizeBytes: 10 * 1024 * 1024,

@@ -5,7 +5,7 @@ import { clientIp } from '../net/client-ip.js';
 
 const WINDOW_MS = 60_000;
 
-// 60 requests a minute per IP, in memory, one window per address. This is
+// 240 requests a minute per IP, in memory, one window per address. This is
 // the outer limit against abuse; the workspace and upload limits below it are
 // about fairness between visitors, not about traffic.
 @Injectable()
