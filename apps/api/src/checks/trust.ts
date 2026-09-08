@@ -18,6 +18,11 @@ export type TrustField = {
   // The quote was found on the page, so the field has a box. A field the
   // document does not have is never grounded.
   grounded: boolean;
+  // The document actually prints something for this field. False for a value
+  // the schema asks every document of this type for, such as a discount,
+  // that this one simply does not have. A field like that is not missing, so
+  // it is left out of the document's badge unless a check blames it.
+  onDocument: boolean;
 };
 
 export type FieldVerdict = {
@@ -26,6 +31,10 @@ export type FieldVerdict = {
   // A failed check read this field. Shown beside the badge. It does not
   // change the state.
   involved: boolean;
+  // Carried through from the field so the document trust function, and the
+  // review screen, can tell an absent value apart from an unverifiable one
+  // without a fifth trust word.
+  onDocument: boolean;
 };
 
 // The first rule that applies wins.
@@ -56,16 +65,19 @@ export function trustOfFields(fields: TrustField[], checks: CheckResult[]): Fiel
     name: field.name,
     trust: trustOf(field, blamed),
     involved: flagged.has(field.name),
+    onDocument: field.onDocument,
   }));
 }
 
 // The state of the document, worked out from its fields. A document still
 // being worked on, or one that failed, shows how it is going instead of this.
+// An unverifiable field the document never printed does not count: the
+// schema asked for it, the document did not owe it.
 export function trustOfDocument(verdicts: FieldVerdict[]): DocumentTrust {
   if (verdicts.some((verdict) => verdict.trust === 'contradicted')) {
     return 'needs-review';
   }
-  if (verdicts.some((verdict) => verdict.trust === 'unverifiable')) {
+  if (verdicts.some((verdict) => verdict.trust === 'unverifiable' && verdict.onDocument)) {
     return 'mostly-verified';
   }
   return 'verified';

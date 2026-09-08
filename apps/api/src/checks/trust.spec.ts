@@ -11,12 +11,20 @@ function passed(blamed: string[], flagged: string[] = []): CheckResult {
 }
 
 // A field the page backs up and nobody has touched.
-function field(name: string, changes: Partial<{ corrected: boolean; grounded: boolean }> = {}) {
-  return { name, corrected: false, grounded: true, ...changes };
+function field(
+  name: string,
+  changes: Partial<{ corrected: boolean; grounded: boolean; onDocument: boolean }> = {},
+) {
+  return { name, corrected: false, grounded: true, onDocument: true, ...changes };
 }
 
-function verdict(name: string, trust: FieldVerdict['trust'], involved = false): FieldVerdict {
-  return { name, trust, involved };
+function verdict(
+  name: string,
+  trust: FieldVerdict['trust'],
+  involved = false,
+  onDocument = true,
+): FieldVerdict {
+  return { name, trust, involved, onDocument };
 }
 
 describe('the trust state of a field', () => {
@@ -86,6 +94,23 @@ describe('the involved flag', () => {
   });
 });
 
+describe('a field the document does not print', () => {
+  it('is unverifiable on its own, but marked as not counting towards the document', () => {
+    const verdicts = trustOfFields([field('discount', { grounded: false, onDocument: false })], []);
+
+    expect(verdicts).toEqual([verdict('discount', 'unverifiable', false, false)]);
+  });
+
+  it('is contradicted, and counts, once a check blames it', () => {
+    const verdicts = trustOfFields(
+      [field('invoice_number', { grounded: false, onDocument: false })],
+      [failed(['invoice_number'])],
+    );
+
+    expect(verdicts).toEqual([verdict('invoice_number', 'contradicted', false, false)]);
+  });
+});
+
 describe('the trust state of a document', () => {
   it('needs review when any field is contradicted', () => {
     const verdicts = [
@@ -111,5 +136,20 @@ describe('the trust state of a document', () => {
 
   it('is verified when there are no fields at all', () => {
     expect(trustOfDocument([])).toBe('verified');
+  });
+
+  it('is not dragged to mostly verified by a field the document never printed', () => {
+    const verdicts = [
+      verdict('vendor', 'verified'),
+      verdict('discount', 'unverifiable', false, false),
+    ];
+
+    expect(trustOfDocument(verdicts)).toBe('verified');
+  });
+
+  it('still needs review when a field the document never printed is contradicted', () => {
+    const verdicts = [verdict('invoice_number', 'contradicted', false, false)];
+
+    expect(trustOfDocument(verdicts)).toBe('needs-review');
   });
 });

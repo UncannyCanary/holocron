@@ -22,6 +22,16 @@ export class WorkspaceService {
     return row ?? null;
   }
 
+  // The workspace a reopen link points at, so it can be opened again on
+  // another browser. Also counts as a visit, the same as passing the door.
+  async findByReopenSecret(secret: string): Promise<Workspace | null> {
+    const [row] = await this.db.select().from(workspace).where(eq(workspace.reopenSecret, secret));
+    if (row) {
+      await this.touch(row.id);
+    }
+    return row ?? null;
+  }
+
   async touch(workspaceId: string): Promise<void> {
     await this.db
       .update(workspace)

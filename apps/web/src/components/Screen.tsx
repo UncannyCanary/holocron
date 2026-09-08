@@ -24,6 +24,9 @@ export function Screen({
 }) {
   return (
     <div className={`flex flex-col ${fill ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+      {/* React hoists a <title> rendered anywhere in the tree into <head>,
+          so the tab always names the screen it is on, no effect needed. */}
+      <title>{breadcrumb ? `Holocron - ${breadcrumb}` : 'Holocron'}</title>
       <TopBar breadcrumb={breadcrumb} actions={actions} />
       <main className={`flex flex-1 flex-col ${fill ? 'min-h-0' : ''}`}>{children}</main>
       <footer className="flex h-10 flex-none items-center gap-5 border-t border-line bg-hint-bar px-5">

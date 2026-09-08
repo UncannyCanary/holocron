@@ -3,6 +3,7 @@ import type { DocumentCheck, DocumentField, FieldTrust } from '../lib/api';
 import {
   checkHeadline,
   fieldText,
+  isNeutral,
   type Panel,
   type Row,
   rowCurrency,
@@ -23,11 +24,14 @@ const TRUST_ORDER: FieldTrust[] = ['contradicted', 'unverifiable', 'corrected', 
 const ROW = 'grid grid-cols-[148px_minmax(0,1fr)_92px] items-start gap-3 px-2 py-[7px]';
 
 // "2 contradicted · 1 unverifiable · 8 verified", counting the values on
-// screen and leaving out the states nothing is in.
+// screen and leaving out the states nothing is in. A value the document
+// never printed is not counted at all: it shows "Not on the document"
+// instead of a badge, so it has no state here to add up.
 function countsLine(fields: DocumentField[]): string {
+  const counted = fields.filter((each) => !isNeutral(each));
   return TRUST_ORDER.map((trust) => ({
     trust,
-    many: fields.filter((each) => each.trust === trust).length,
+    many: counted.filter((each) => each.trust === trust).length,
   }))
     .filter((each) => each.many > 0)
     .map((each) => `${each.many} ${TRUST_LABELS[each.trust].toLowerCase()}`)
@@ -163,6 +167,9 @@ function FieldRow({ row, ...props }: FieldPanelProps & { row: Row }) {
   const holdsSelection = fieldsHere.some((each) => each.id === selectedId);
   const beingEdited = editing !== null && fieldsHere.some((each) => each.id === editing.fieldId);
   const currency = rowCurrency(row);
+  // Every value in the row is one the document never printed: a quiet line
+  // instead of a badge, since there is nothing here to trust or distrust.
+  const allNeutral = fieldsHere.every((each) => isNeutral(each));
 
   return (
     <div
@@ -194,9 +201,13 @@ function FieldRow({ row, ...props }: FieldPanelProps & { row: Row }) {
           {currency !== null && !beingEdited && <span className="text-ink-quiet">{currency}</span>}
         </span>
 
-        <span className={`badge badge-${row.trust} justify-self-end`}>
-          {TRUST_LABELS[row.trust]}
-        </span>
+        {allNeutral ? (
+          <span className="justify-self-end text-xs text-ink-quiet">Not on the document</span>
+        ) : (
+          <span className={`badge badge-${row.trust} justify-self-end`}>
+            {TRUST_LABELS[row.trust]}
+          </span>
+        )}
       </div>
 
       {beingEdited && <EditControls {...props} />}

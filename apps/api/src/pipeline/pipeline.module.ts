@@ -5,6 +5,7 @@ import { JobsModule } from '../jobs/jobs.module.js';
 import { MODEL_CLIENT } from './model-client.js';
 import { PipelineService } from './pipeline.service.js';
 import { PipelineWorker } from './pipeline.worker.js';
+import { ResendService } from './resend.service.js';
 
 @Module({
   imports: [DbModule, JobsModule],
@@ -14,6 +15,7 @@ import { PipelineWorker } from './pipeline.worker.js';
     { provide: MODEL_CLIENT, useFactory: () => new Anthropic() },
     PipelineService,
     PipelineWorker,
+    ResendService,
   ],
   exports: [PipelineService],
 })

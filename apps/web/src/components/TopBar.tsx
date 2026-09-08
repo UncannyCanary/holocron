@@ -21,9 +21,9 @@ export function TopBar({ breadcrumb, actions }: { breadcrumb?: string; actions?:
       </div>
       <div className="flex items-center gap-3.5">
         {actions}
-        <button type="button" className="cursor-pointer text-note text-link">
+        <Link to="/settings" className="text-note">
           Settings
-        </button>
+        </Link>
         <span className="hint">
           <Kbd>?</Kbd>Shortcuts
         </span>

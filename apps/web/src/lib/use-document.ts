@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { correctField, getDocument } from './api';
+import { correctField, getDocument, retryDocument } from './api';
 
 const STILL_WORKING = new Set(['queued', 'processing']);
 
@@ -23,6 +23,19 @@ export function useCorrectField() {
   return useMutation({
     mutationFn: (change: { fieldId: string; value: string }) =>
       correctField(change.fieldId, change.value),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
+// Sends a failed document back to the queue so it does not stay failed
+// forever. The queue and the document itself both start polling again once
+// the query it invalidates comes back queued.
+export function useRetryDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => retryDocument(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['documents'] });
     },

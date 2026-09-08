@@ -161,3 +161,50 @@ export function correctField(fieldId: string, value: string): Promise<{ changedC
     body: JSON.stringify({ value }),
   });
 }
+
+// Sends a failed document back to the queue and puts a fresh job in for it,
+// rather than waiting for it to fail forever.
+export function retryDocument(id: string): Promise<{ status: DocumentStatus }> {
+  return request(`/documents/${id}/retry`, { method: 'POST' });
+}
+
+export type RunStep = {
+  name: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  error: string | null;
+};
+
+export type DocumentRun = {
+  id: string;
+  model: string | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  error: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  steps: RunStep[];
+};
+
+export function getDocumentTimeline(id: string): Promise<{ runs: DocumentRun[] }> {
+  return request(`/documents/${id}/timeline`);
+}
+
+export type WorkspaceSettings = {
+  createdAt: string;
+  reopenSecret: string;
+  uploads: { usedToday: number; perDay: number };
+  spend: { usedThisMonthUsd: number; capUsd: number };
+};
+
+export function getWorkspaceSettings(): Promise<WorkspaceSettings> {
+  return request('/workspace/settings');
+}
+
+export function reopenWorkspace(secret: string): Promise<Workspace> {
+  return request('/workspace/reopen', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ secret }),
+  });
+}

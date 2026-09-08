@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useRef, useState } from 'react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { type ReactNode, useRef, useState } from 'react';
 import { DocumentBadge } from '../components/DocumentState';
 import { FieldPanel } from '../components/FieldPanel';
 import { Kbd } from '../components/Kbd';
@@ -9,7 +9,7 @@ import { type DocumentField, type DocumentSummary, messageOf } from '../lib/api'
 import { sortWorstFirst, stateOf } from '../lib/document-display';
 import { agoText, durationText } from '../lib/relative-time';
 import { buildPanel, fieldText, type Panel } from '../lib/review-layout';
-import { useCorrectField, useDocument } from '../lib/use-document';
+import { useCorrectField, useDocument, useRetryDocument } from '../lib/use-document';
 import { useDocuments } from '../lib/use-documents';
 import { useShortcuts } from '../lib/use-shortcuts';
 
@@ -45,6 +45,7 @@ function ReviewScreen({ documentId }: { documentId: string }) {
   const { data: doc, isPending, isError, error } = useDocument(documentId);
   const { data: documents = [] } = useDocuments();
   const correct = useCorrectField();
+  const retry = useRetryDocument();
 
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ fieldId: string; value: string } | null>(null);
@@ -153,6 +154,13 @@ function ReviewScreen({ documentId }: { documentId: string }) {
     actions: (
       <>
         {summary && <DocumentBadge doc={summary} />}
+        <Link
+          to="/documents/$documentId/timeline"
+          params={{ documentId }}
+          className="text-note no-underline"
+        >
+          Timeline
+        </Link>
         {place >= 0 && (
           <span className="text-xs text-ink-quiet">
             {place + 1} of {queue.length} in the queue
@@ -208,7 +216,26 @@ function ReviewScreen({ documentId }: { documentId: string }) {
   if (doc.status !== 'ready' || doc.pages.length === 0) {
     return (
       <Screen {...frame}>
-        <Note>{summary?.why ?? 'This document has not been read yet.'}</Note>
+        <Note>
+          <p>{summary?.why ?? 'This document has not been read yet.'}</p>
+          {doc.status === 'failed' && (
+            <div className="mt-3.5 flex flex-col items-start gap-2">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={retry.isPending}
+                onClick={() => retry.mutate(documentId)}
+              >
+                {retry.isPending ? 'Trying again…' : 'Try again'}
+              </button>
+              {retry.isError && (
+                <span role="alert" className="text-note text-needs-review">
+                  {messageOf(retry.error, 'That did not work. Try again.')}
+                </span>
+              )}
+            </div>
+          )}
+        </Note>
       </Screen>
     );
   }
@@ -261,10 +288,10 @@ function ReviewScreen({ documentId }: { documentId: string }) {
   );
 }
 
-function Note({ children }: { children: string }) {
+function Note({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1 justify-center px-5 py-12">
-      <p className="w-full max-w-[640px] text-lede text-ink-soft">{children}</p>
+      <div className="w-full max-w-[640px] text-lede text-ink-soft">{children}</div>
     </div>
   );
 }

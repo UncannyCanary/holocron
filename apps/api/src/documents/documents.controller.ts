@@ -4,20 +4,24 @@ import type { DocumentType } from '@holocron/shared';
 import {
   Controller,
   Get,
+  HttpCode,
   HttpException,
   HttpStatus,
   Inject,
   Param,
+  Post,
   Query,
   Req,
   Res,
 } from '@nestjs/common';
-import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { Request, Response } from 'express';
 import { workspaceIdFromCookieHeader } from '../cookie/workspace-cookie.js';
 import type { Db } from '../db/client.js';
 import { DB } from '../db/db.module.js';
 import { check, document, field, page, run, runStep } from '../db/schema.js';
+// biome-ignore lint/style/useImportType: Nest reads this at runtime to inject it; a type-only import breaks that.
+import { JobsService } from '../jobs/jobs.module.js';
 import { NO_WORKSPACE_MESSAGE } from '../workspace/workspace.controller.js';
 import {
   counterpartyOf,
@@ -44,9 +48,14 @@ const IS_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // worst-first order, and one line saying why it sits there. The single
 // document route gives the review screen everything else: every field with
 // its box, every check, the pages, and the run that read it.
+const NOT_FAILED_MESSAGE = 'This document has not failed, so there is nothing to try again.';
+
 @Controller('documents')
 export class DocumentsController {
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    private readonly jobs: JobsService,
+  ) {}
 
   @Get()
   async list(@Req() req: Request) {
@@ -185,6 +194,77 @@ export class DocumentsController {
             endedAt: latest.endedAt.toISOString(),
           }
         : null,
+    };
+  }
+
+  // A failed document tried again: back to queued, with a fresh job sent so
+  // it does not wait for the next daily sweep. The pipeline opens its own new
+  // run once the job is picked up, since the failed run already ended.
+  @Post(':id/retry')
+  @HttpCode(200)
+  async retry(@Req() req: Request, @Param('id') id: string) {
+    const doc = await this.ownedDocument(req, id);
+    if (doc.status !== 'failed') {
+      throw new HttpException(NOT_FAILED_MESSAGE, HttpStatus.CONFLICT);
+    }
+
+    await this.db.update(document).set({ status: 'queued' }).where(eq(document.id, doc.id));
+    await this.jobs.sendProcessDocument({ documentId: doc.id, workspaceId: doc.workspaceId });
+    return { status: 'queued' as const };
+  }
+
+  // Every run this document has had, newest first, each with its steps and
+  // their timings and errors. The pages and the run belong to the canonical
+  // row, the same as the review screen's own detail, since a sample's runs
+  // are read once and shared.
+  @Get(':id/timeline')
+  async timeline(@Req() req: Request, @Param('id') id: string) {
+    const doc = await this.ownedDocument(req, id);
+    const sharedId = doc.documentId ?? doc.id;
+
+    const runs = await this.db
+      .select()
+      .from(run)
+      .where(eq(run.documentId, sharedId))
+      .orderBy(desc(run.startedAt));
+
+    const steps =
+      runs.length === 0
+        ? []
+        : await this.db
+            .select()
+            .from(runStep)
+            .where(
+              inArray(
+                runStep.runId,
+                runs.map((each) => each.id),
+              ),
+            )
+            .orderBy(runStep.startedAt);
+
+    const stepsByRun = new Map<string, (typeof steps)[number][]>();
+    for (const step of steps) {
+      const list = stepsByRun.get(step.runId) ?? [];
+      list.push(step);
+      stepsByRun.set(step.runId, list);
+    }
+
+    return {
+      runs: runs.map((each) => ({
+        id: each.id,
+        model: each.model,
+        inputTokens: each.inputTokens,
+        outputTokens: each.outputTokens,
+        error: each.error,
+        startedAt: each.startedAt.toISOString(),
+        endedAt: each.endedAt?.toISOString() ?? null,
+        steps: (stepsByRun.get(each.id) ?? []).map((step) => ({
+          name: step.name,
+          startedAt: step.startedAt?.toISOString() ?? null,
+          endedAt: step.endedAt?.toISOString() ?? null,
+          error: step.error,
+        })),
+      })),
     };
   }
 

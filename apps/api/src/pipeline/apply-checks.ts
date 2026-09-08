@@ -66,6 +66,8 @@ export async function applyChecks(db: Db, documentId: string): Promise<CheckResu
       corrected: corrected.has(row.id),
       // A field with a box is one whose value was found on the page.
       grounded: row.x0 !== null,
+      // Null means the document itself never printed this value.
+      onDocument: row.value !== null,
     })),
     results,
   );

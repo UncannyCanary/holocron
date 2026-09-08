@@ -55,10 +55,10 @@ export function checkPageCount(pages: number): LimitCheck {
   return { ok: true };
 }
 
-// 10 uploads a day per workspace. Counts real uploads only: a workspace's own
-// documents, not the sample copies it was given, which point back at a
-// canonical document instead.
-export async function checkDailyUploadQuota(db: Db, workspaceId: string): Promise<LimitCheck> {
+// How many files this workspace has uploaded itself in the last 24 hours.
+// Counts real uploads only: a workspace's own documents, not the sample
+// copies it was given, which point back at a canonical document instead.
+export async function uploadsToday(db: Db, workspaceId: string): Promise<number> {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(document)
@@ -70,7 +70,13 @@ export async function checkDailyUploadQuota(db: Db, workspaceId: string): Promis
       ),
     );
 
-  if ((row?.count ?? 0) >= LIMITS.uploadsPerWorkspacePerDay) {
+  return row?.count ?? 0;
+}
+
+// 10 uploads a day per workspace.
+export async function checkDailyUploadQuota(db: Db, workspaceId: string): Promise<LimitCheck> {
+  const used = await uploadsToday(db, workspaceId);
+  if (used >= LIMITS.uploadsPerWorkspacePerDay) {
     return { ok: false, message: MESSAGES.tooManyUploadsToday };
   }
   return { ok: true };

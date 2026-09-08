@@ -122,12 +122,35 @@ describe('summarizeReady', () => {
   });
 
   it('names the fields not found on the page, in plain English, when mostly verified', () => {
+    // The model read a value, but our own text layer could not find its
+    // quote on the page, so the field is really unverifiable rather than
+    // a value the document never printed.
     const fields = [
       field('vendor', 'Acme', { trust: 'verified' }),
-      field('tax_amount', null, { trust: 'unverifiable' }),
+      field('tax_amount', '25.00', { trust: 'unverifiable' }),
     ];
     const result = summarizeReady(fields, []);
     expect(result.trust).toBe('mostly-verified');
+    expect(result.why).toBe('Not found on the page: the tax.');
+  });
+
+  it('is verified, not mostly verified, when the only unverifiable field is one the document never printed', () => {
+    // The value is null: the field is unverifiable because nothing was ever
+    // there to ground, not because the model's quote could not be found.
+    const fields = [
+      field('vendor', 'Acme', { trust: 'verified' }),
+      field('discount', null, { trust: 'unverifiable' }),
+    ];
+    const result = summarizeReady(fields, []);
+    expect(result.trust).toBe('verified');
+  });
+
+  it('leaves a field the document never printed out of the "not found" line', () => {
+    const fields = [
+      field('tax_amount', '25.00', { trust: 'unverifiable' }),
+      field('discount', null, { trust: 'unverifiable' }),
+    ];
+    const result = summarizeReady(fields, []);
     expect(result.why).toBe('Not found on the page: the tax.');
   });
 });

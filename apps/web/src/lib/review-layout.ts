@@ -83,9 +83,18 @@ const TRUST_RANK: Record<FieldTrust, number> = {
   verified: 3,
 };
 
+// A value the document does not print at all, such as a discount on an
+// invoice with no discount line. The schema asked for it; the document did
+// not owe it. Not the same as a value the model found but our own text layer
+// could not confirm, which stays a real unverifiable.
+export function isNeutral(field: DocumentField): boolean {
+  return field.trust === 'unverifiable' && field.value === null;
+}
+
 export function worstTrust(fields: DocumentField[]): FieldTrust {
   return fields.reduce<FieldTrust>(
-    (worst, each) => (TRUST_RANK[each.trust] < TRUST_RANK[worst] ? each.trust : worst),
+    (worst, each) =>
+      !isNeutral(each) && TRUST_RANK[each.trust] < TRUST_RANK[worst] ? each.trust : worst,
     'verified',
   );
 }

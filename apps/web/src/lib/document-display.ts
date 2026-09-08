@@ -63,3 +63,15 @@ export function totalText(doc: Pick<DocumentSummary, 'total'>): string {
   if (!doc.total) return '—';
   return doc.total.currency ? `${doc.total.amount} ${doc.total.currency}` : doc.total.amount;
 }
+
+// Plain English for a run step's name, for the timeline screen.
+export const STEP_LABELS: Record<string, string> = {
+  received: 'Received',
+  rendered: 'Rendered the pages',
+  text_layer: 'Read the text',
+  extracted: 'Asked the model to read it',
+  grounded: 'Found values on the page',
+  checked: 'Checked the numbers',
+  done: 'Done',
+  failed: 'Failed',
+};

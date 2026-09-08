@@ -138,6 +138,9 @@ export function summarizeReady(
     name: each.name,
     trust: each.trust,
     involved: false,
+    // Null means the document never printed this value, so it does not
+    // count as missing.
+    onDocument: each.value !== null,
   }));
   const trust = trustOfDocument(verdicts);
 
@@ -155,7 +158,7 @@ export function summarizeReady(
     const missing = [
       ...new Set(
         fields
-          .filter((each) => each.trust === 'unverifiable')
+          .filter((each) => each.trust === 'unverifiable' && each.value !== null)
           .map((each) => friendlyFieldName(each.name)),
       ),
     ];

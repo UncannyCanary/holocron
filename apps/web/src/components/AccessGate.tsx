@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
 import { ensureWorkspace, getDoorStatus, messageOf, unlockDoor } from '../lib/api';
 
@@ -7,6 +8,7 @@ import { ensureWorkspace, getDoorStatus, messageOf, unlockDoor } from '../lib/ap
 // itself.
 export function AccessGate({ children }: { children: ReactNode }) {
   const door = useQuery({ queryKey: ['door'], queryFn: getDoorStatus });
+  const reopening = useLocation({ select: (location) => location.pathname }).startsWith('/reopen/');
 
   if (door.isPending) {
     return null;
@@ -16,6 +18,11 @@ export function AccessGate({ children }: { children: ReactNode }) {
   }
   if (door.data.required && !door.data.unlocked) {
     return <DoorScreen />;
+  }
+  // A reopen link brings its own workspace. Making a new one first would
+  // waste it, and spend one of the few new workspaces an address may open.
+  if (reopening) {
+    return <>{children}</>;
   }
   return <EnsureWorkspace>{children}</EnsureWorkspace>;
 }
