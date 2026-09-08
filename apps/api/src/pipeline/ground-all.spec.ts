@@ -107,4 +107,68 @@ describe('groundAll', () => {
 
     expect(found.get('bill_to')?.box.x0).toBe(names[0].box.x0);
   });
+  it('sends a foot amount to the foot and leaves the line its own copy', () => {
+    const item = line(0, 'Kettle 1 599.00 482.20 569.00');
+    const foot = line(1, 'Total 629.00 482.20 569.00');
+    const grand = line(2, 'Grand Total INR 569.00');
+    const pages = [
+      {
+        number: 1,
+        textLayer: { source: 'pdf-text' as const, spans: [...item, ...foot, ...grand] },
+      },
+    ];
+
+    const found = groundAll(
+      [
+        flat('taxable_value', '482.2', '482.20'),
+        flat('total', '569', 'INR 569.00'),
+        flat('line_items.0.description', 'Kettle'),
+        flat('line_items.0.quantity', '1'),
+        flat('line_items.0.unit_price', '599', '599.00'),
+        flat('line_items.0.taxable_value', '482.2', '482.20'),
+        flat('line_items.0.line_total', '569', '569.00'),
+      ],
+      pages,
+    );
+
+    expect(found.get('taxable_value')?.box).toEqual(foot[2].box);
+    expect(found.get('line_items.0.taxable_value')?.box).toEqual(item[3].box);
+    expect(found.get('line_items.0.line_total')?.box).toEqual(item[4].box);
+    expect(found.get('total')?.box.y0).toBe(grand[3].box.y0);
+  });
+
+  it('puts each tax line under its own heading, even when the amounts match', () => {
+    const heads = line(0, 'Title Qty Gross Taxable SGST CGST Total');
+    const item = line(1, 'Kettle 1 599.00 482.20 43.40 43.40 569.00');
+    const foot = line(2, 'Total 1 629.00 482.20 43.40 43.40 569.00');
+    // Line the headings up over their columns.
+    for (const [head, cell] of [
+      [heads[4], foot[4]],
+      [heads[5], foot[5]],
+    ] as const) {
+      head.box.x0 = cell.box.x0;
+      head.box.x1 = cell.box.x1;
+    }
+    const pages = [
+      {
+        number: 1,
+        textLayer: { source: 'pdf-text' as const, spans: [...heads, ...item, ...foot] },
+      },
+    ];
+
+    const found = groundAll(
+      [
+        flat('tax_lines.0.label', 'SGST'),
+        flat('tax_lines.0.amount', '43.4', '43.40'),
+        flat('tax_lines.1.label', 'CGST'),
+        flat('tax_lines.1.amount', '43.4', '43.40'),
+        flat('total', '569', '569.00'),
+      ],
+      pages,
+    );
+
+    expect(found.get('tax_lines.0.amount')?.box).toEqual(foot[4].box);
+    expect(found.get('tax_lines.1.amount')?.box).toEqual(foot[5].box);
+    expect(found.get('total')?.box).toEqual(foot[6].box);
+  });
 });

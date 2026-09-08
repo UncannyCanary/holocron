@@ -24,6 +24,13 @@ export type GroundInput = {
   // of a line item. When the quote appears more than once, the one nearest to
   // these wins.
   near?: Box[];
+  // The box of the column heading this value sits under, such as the CGST
+  // heading over a tax amount. When the quote appears more than once, the
+  // one in that column wins.
+  column?: Box;
+  // Prefer the lowest occurrence on the page. Amounts printed at the foot of
+  // an invoice are often printed on a line above as well.
+  prefer?: 'last';
 };
 
 // One page of the document with the words we read ourselves. Every page is
@@ -298,7 +305,7 @@ export function ground(field: GroundInput, pages: GroundPage[]): Grounding | nul
     }
   }
 
-  const box = choose(candidates, field.avoid ?? [], field.near ?? []);
+  const box = choose(candidates, field);
   return box === null ? null : { page: page.number, box };
 }
 
@@ -306,12 +313,27 @@ export function ground(field: GroundInput, pages: GroundPage[]): Grounding | nul
 // another value already owns are not this one's, so those candidates go
 // first, unless they are all there is. Among what is left, the one nearest
 // to the rest of its row wins, else the first in reading order.
-function choose(candidates: Box[], avoid: Box[], near: Box[]): Box | null {
+function choose(candidates: Box[], field: GroundInput): Box | null {
   if (candidates.length === 0) {
     return null;
   }
-  const free = candidates.filter((box) => !avoid.some((taken) => contains(taken, box)));
-  const pool = free.length > 0 ? free : candidates;
+  const avoid = field.avoid ?? [];
+  const near = field.near ?? [];
+  let pool = candidates.filter((box) => !avoid.some((taken) => contains(taken, box)));
+  if (pool.length === 0) {
+    pool = candidates;
+  }
+  if (field.column !== undefined) {
+    const column = field.column;
+    const under = pool.filter((box) => sharesColumn(box, column));
+    if (under.length > 0) {
+      pool = under;
+    }
+  }
+  if (field.prefer === 'last') {
+    const lowest = Math.max(...pool.map((box) => box.y0));
+    pool = pool.filter((box) => box.y0 >= lowest - SLACK);
+  }
   if (near.length === 0) {
     return pool[0];
   }
@@ -323,6 +345,10 @@ function choose(candidates: Box[], avoid: Box[], near: Box[]): Box | null {
   return ranked.reduce((best, box) =>
     distanceTo(box, near) < distanceTo(best, near) ? box : best,
   );
+}
+
+function sharesColumn(box: Box, other: Box): boolean {
+  return box.x0 < other.x1 + SLACK && box.x1 > other.x0 - SLACK;
 }
 
 function sharesLine(box: Box, other: Box): boolean {

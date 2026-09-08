@@ -267,3 +267,26 @@ describe('a quote that appears more than once', () => {
     expect(found).toEqual({ page: 1, box: boxOf(second[2]) });
   });
 });
+
+describe('an amount printed on a line and again at the foot', () => {
+  const item = line(0, 'Kettle 1 599.00 482.20 43.40 43.40 569.00');
+  const foot = line(1, 'Total 629.00 482.20 43.40 43.40 569.00');
+  const heads = line(2, 'x x x Taxable SGST CGST Total');
+  const page = pdfPage(1, heads, item, foot);
+
+  it('takes the lowest one when asked to prefer the last', () => {
+    const found = ground({ value: '482.2', quote: '482.20', page: 1, prefer: 'last' }, [page]);
+    expect(found).toEqual({ page: 1, box: boxOf(foot[2]) });
+  });
+
+  it('takes the one under its own column heading', () => {
+    // The CGST heading sits over the fifth cell of each row.
+    heads[5].box.x0 = foot[4].box.x0;
+    heads[5].box.x1 = foot[4].box.x1;
+    const found = ground(
+      { value: '43.4', quote: '43.40', page: 1, prefer: 'last', column: heads[5].box },
+      [page],
+    );
+    expect(found).toEqual({ page: 1, box: boxOf(foot[4]) });
+  });
+});

@@ -31,6 +31,24 @@ function labelBoxOf(name: string, page: number, pages: Page[]): Box | null {
   return null;
 }
 
+// Amounts printed at the foot of an invoice or a receipt. The same figure is
+// often printed on a line above as well, so these prefer the lowest
+// occurrence on the page, which is where the foot is.
+const FOOT_FIELDS = new Set([
+  'subtotal',
+  'discount',
+  'taxable_value',
+  'tax_amount',
+  'round_off',
+  'total',
+  'cash',
+  'change',
+]);
+
+function isFootAmount(name: string): boolean {
+  return FOOT_FIELDS.has(name) || (name.startsWith('tax_lines.') && name.endsWith('.amount'));
+}
+
 function sameBox(left: Box, right: Box): boolean {
   return (
     left.x0 === right.x0 && left.y0 === right.y0 && left.x1 === right.x1 && left.y1 === right.y1
@@ -69,22 +87,28 @@ export function groundAll(flats: FlatField[], pages: Page[]): Map<string, Ground
       others.push({ name: each.name, box: other.box });
     });
 
-    const label = row === null ? labelBoxOf(flat.name, page, pages) : null;
+    let near: Box[] = [];
+    let column: Box | undefined;
+    let prefer: 'last' | undefined;
+    if (isFootAmount(flat.name)) {
+      prefer = 'last';
+      // A tax line's amount sits under the heading that names the tax, and
+      // that heading is the line's own label.
+      if (row !== null) {
+        const heading = found.get(`${row}.label`);
+        column = heading != null && heading.page === page ? heading.box : undefined;
+      }
+    } else if (row !== null) {
+      near = others.filter((each) => rowOf(each.name) === row).map((each) => each.box);
+    } else {
+      const label = labelBoxOf(flat.name, page, pages);
+      near = label === null ? [] : [label];
+    }
+
     found.set(
       flat.name,
       ground(
-        {
-          value,
-          quote,
-          page,
-          avoid: others.map((each) => each.box),
-          near:
-            row === null
-              ? label === null
-                ? []
-                : [label]
-              : others.filter((each) => rowOf(each.name) === row).map((each) => each.box),
-        },
+        { value, quote, page, avoid: others.map((each) => each.box), near, column, prefer },
         pages,
       ),
     );
