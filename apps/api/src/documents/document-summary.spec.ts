@@ -157,7 +157,7 @@ describe('summarizeReady', () => {
 
 describe('summarizeProcessing', () => {
   it('names the current step and its place in the run', () => {
-    expect(summarizeProcessing('checked')).toBe('Checking the numbers. Step 6 of 6.');
+    expect(summarizeProcessing('checked')).toBe('Checking the numbers. Step 7 of 7.');
   });
 
   it('has a plain default when nothing has started yet', () => {

@@ -36,6 +36,7 @@ export const runStepName = pgEnum('run_step_name', [
   'received',
   'rendered',
   'text_layer',
+  'split',
   'extracted',
   'grounded',
   'checked',
@@ -56,12 +57,22 @@ export type Workspace = typeof workspace.$inferSelect;
 // canonical row has a null workspaceId. A workspace's copy of a sample sets
 // workspaceId to that workspace and documentId back to the canonical row, so
 // pages and runs stay shared while fields and checks are the workspace's own.
+//
+// One file can hold more than one document, such as two invoices from two
+// sellers in one order. The uploaded row is the first of them and owns the
+// pages. Each further document is its own row with sourceId pointing back at
+// the uploaded row, and pageNumbers says which of the file's pages are its.
+// A row with null pageNumbers has every page of its file.
 export const document = pgTable('document', {
   id: uuid('id').primaryKey().defaultRandom(),
   workspaceId: uuid('workspace_id').references(() => workspace.id, { onDelete: 'cascade' }),
   documentId: uuid('document_id').references((): AnyPgColumn => document.id, {
     onDelete: 'cascade',
   }),
+  sourceId: uuid('source_id').references((): AnyPgColumn => document.id, {
+    onDelete: 'cascade',
+  }),
+  pageNumbers: integer('page_numbers').array(),
   type: documentType('type').notNull(),
   status: documentStatus('status').notNull().default('queued'),
   filePath: text('file_path').notNull(),

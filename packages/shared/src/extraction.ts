@@ -148,3 +148,16 @@ export type DocumentType = keyof typeof extractionSchemas;
 export type ExtractionOf<T extends DocumentType> = z.infer<(typeof extractionSchemas)[T]>;
 
 export type Extraction = InvoiceExtraction | ReceiptExtraction | ContractExtraction;
+
+// What the cheap first look at a file answers: how many documents it holds,
+// each with its type and its page numbers, counting from 1.
+export const splitSchema = z.object({
+  documents: z.array(
+    z.object({
+      type: z.enum(['invoice', 'receipt', 'contract']),
+      pages: z.array(z.number()).describe('The page numbers of this document, counting from 1.'),
+    }),
+  ),
+});
+
+export type SplitAnswer = z.infer<typeof splitSchema>;

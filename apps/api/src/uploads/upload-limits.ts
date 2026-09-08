@@ -66,6 +66,8 @@ export async function uploadsToday(db: Db, workspaceId: string): Promise<number>
       and(
         eq(document.workspaceId, workspaceId),
         isNull(document.documentId),
+        // A document split out of an uploaded file was not a second upload.
+        isNull(document.sourceId),
         gte(document.createdAt, sql`now() - interval '24 hours'`),
       ),
     );

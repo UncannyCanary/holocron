@@ -139,11 +139,12 @@ export class DocumentsController {
   async detail(@Req() req: Request, @Param('id') id: string) {
     const doc = await this.ownedDocument(req, id);
     const sharedId = doc.documentId ?? doc.id;
+    const pagesOwner = doc.documentId ?? doc.sourceId ?? doc.id;
 
-    const [fields, checks, pages, runs] = await Promise.all([
+    const [fields, checks, filePages, runs] = await Promise.all([
       this.db.select().from(field).where(eq(field.documentId, doc.id)).orderBy(field.createdAt),
       this.db.select().from(check).where(eq(check.documentId, doc.id)).orderBy(check.name),
-      this.db.select().from(page).where(eq(page.documentId, sharedId)).orderBy(page.number),
+      this.db.select().from(page).where(eq(page.documentId, pagesOwner)).orderBy(page.number),
       this.db
         .select()
         .from(run)
@@ -152,6 +153,11 @@ export class DocumentsController {
         .limit(1),
     ]);
 
+    // A document split out of a file shows only its own pages.
+    const pages =
+      doc.pageNumbers === null
+        ? filePages
+        : filePages.filter((row) => (doc.pageNumbers as number[]).includes(row.number));
     const pageNumberById = new Map(pages.map((row) => [row.id, row.number]));
     const [latest] = runs;
 
@@ -281,12 +287,19 @@ export class DocumentsController {
     const doc = await this.ownedDocument(req, id);
 
     const wanted = Number(number);
-    const [row] = Number.isInteger(wanted)
-      ? await this.db
-          .select()
-          .from(page)
-          .where(and(eq(page.documentId, doc.documentId ?? doc.id), eq(page.number, wanted)))
-      : [];
+    const mine = doc.pageNumbers === null || (doc.pageNumbers as number[]).includes(wanted);
+    const [row] =
+      Number.isInteger(wanted) && mine
+        ? await this.db
+            .select()
+            .from(page)
+            .where(
+              and(
+                eq(page.documentId, doc.documentId ?? doc.sourceId ?? doc.id),
+                eq(page.number, wanted),
+              ),
+            )
+        : [];
     if (!row) {
       throw new HttpException(NO_SUCH_PAGE, HttpStatus.NOT_FOUND);
     }

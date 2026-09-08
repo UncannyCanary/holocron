@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type Anthropic from '@anthropic-ai/sdk';
@@ -8,6 +9,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { and, eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { PDFDocument } from 'pdf-lib';
 import type { PgBoss } from 'pg-boss';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -71,6 +73,25 @@ function fixtureClient(): Anthropic {
         system: Array<{ text: string }>;
         messages: Array<{ content: Array<{ type: string; text?: string }> }>;
       }) => {
+        const blocks = body.messages[0].content;
+        // The first look at a file: one document unless the pages carry two
+        // different sellers, which is how the two invoice file is built.
+        if (body.system[0].text.includes('how many separate documents')) {
+          const pageCount = blocks.filter((block) => block.type === 'image').length;
+          const words = blocks.map((block) => block.text ?? '').join('\n');
+          const two = words.includes('Cedar & Finch') && words.includes('Northlake');
+          const documents = two
+            ? [
+                { type: 'invoice', pages: [1] },
+                { type: 'invoice', pages: [2] },
+              ]
+            : [{ type: 'invoice', pages: Array.from({ length: pageCount }, (_, i) => i + 1) }];
+          return {
+            stop_reason: 'end_turn',
+            usage: { input_tokens: 500, output_tokens: 40 },
+            parsed_output: { documents },
+          };
+        }
         const type = typeOf(body.system[0].text);
         // Two invoices share one type. The GST one is the one whose page
         // words mention a GSTIN.
@@ -231,6 +252,7 @@ describe('the pipeline, end to end', () => {
           'received',
           'rendered',
           'text_layer',
+          'split',
           'extracted',
           'grounded',
           'checked',
@@ -414,6 +436,64 @@ describe('the pipeline, end to end', () => {
     const jobs = await boss.findJobs(PROCESS_DOCUMENT, { data: { documentId: uploaded.id } });
     expect(jobs).toHaveLength(1);
   });
+
+  it(
+    'splits a file that holds two invoices into two documents',
+    async () => {
+      // Two sample invoices stapled into one file, the way a marketplace
+      // order with two sellers arrives.
+      const merged = await PDFDocument.create();
+      for (const file of ['invoices/invoice-1-clean.pdf', 'invoices/invoice-2-clean.pdf']) {
+        const source = await PDFDocument.load(readFileSync(samplesPath(file)));
+        const [copied] = await merged.copyPages(source, [0]);
+        merged.addPage(copied);
+      }
+      const dir = mkdtempSync(path.join(tmpdir(), 'holocron-two-'));
+      const filePath = path.join(dir, 'two-invoices.pdf');
+      writeFileSync(filePath, await merged.save());
+
+      const [uploaded] = await db
+        .insert(document)
+        .values({ workspaceId, type: 'invoice', status: 'queued', filePath })
+        .returning();
+
+      await pipeline.run(uploaded.id);
+
+      const [first] = await db.select().from(document).where(eq(document.id, uploaded.id));
+      expect(first.status).toBe('ready');
+      expect(first.pageNumbers).toEqual([1]);
+
+      const [second] = await db.select().from(document).where(eq(document.sourceId, uploaded.id));
+      expect(second).toBeTruthy();
+      expect(second.pageNumbers).toEqual([2]);
+      expect(second.status).toBe('queued');
+      expect(second.workspaceId).toBe(workspaceId);
+
+      // The second document's job is on the queue; running it reads page 2.
+      const jobs = await boss.findJobs(PROCESS_DOCUMENT, { data: { documentId: second.id } });
+      expect(jobs).toHaveLength(1);
+      await pipeline.run(second.id);
+      const [after] = await db.select().from(document).where(eq(document.id, second.id));
+      expect(after.status).toBe('ready');
+
+      // Each shows only its own page on the review screen.
+      const detail = await request(app.getHttpServer())
+        .get(`/api/documents/${second.id}`)
+        .set('Cookie', cookie);
+      expect(detail.status).toBe(200);
+      expect(detail.body.pages.map((each: { number: number }) => each.number)).toEqual([2]);
+      const firstDetail = await request(app.getHttpServer())
+        .get(`/api/documents/${uploaded.id}`)
+        .set('Cookie', cookie);
+      expect(firstDetail.body.pages.map((each: { number: number }) => each.number)).toEqual([1]);
+
+      // The split is a step on the first document's timeline.
+      const [attempt] = await db.select().from(run).where(eq(run.documentId, uploaded.id));
+      const steps = await db.select().from(runStep).where(eq(runStep.runId, attempt.id));
+      expect(steps.map((step) => step.name)).toContain('split');
+    },
+    SLOW,
+  );
 
   it(
     'runs the uploaded document the same way the worker would',

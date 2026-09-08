@@ -69,6 +69,7 @@ export const STEP_LABELS: Record<string, string> = {
   received: 'Received',
   rendered: 'Rendered the pages',
   text_layer: 'Read the text',
+  split: 'Looked for more than one document',
   extracted: 'Asked the model to read it',
   grounded: 'Found values on the page',
   checked: 'Checked the numbers',

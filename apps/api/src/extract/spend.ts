@@ -9,6 +9,7 @@ import { run } from '../db/schema.js';
 export const MODEL_PRICES = {
   'claude-opus-5': { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
   'claude-sonnet-5': { input: 2, output: 10, cacheWrite: 2.5, cacheRead: 0.2 },
+  'claude-haiku-4-5-20251001': { input: 1, output: 5, cacheWrite: 1.25, cacheRead: 0.1 },
 } as const;
 
 export type PricedModel = keyof typeof MODEL_PRICES;

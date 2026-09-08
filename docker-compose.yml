@@ -49,6 +49,7 @@ services:
       # Only the worker calls the model, so only the worker gets the key.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       EXTRACTION_MODEL: ${EXTRACTION_MODEL:-}
+      SPLIT_MODEL: ${SPLIT_MODEL:-}
     depends_on:
       postgres:
         condition: service_healthy

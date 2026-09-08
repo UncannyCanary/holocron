@@ -68,13 +68,9 @@ const FINAL_ASK: Record<DocumentType, string> = {
   contract: 'Pull out the contract.',
 };
 
-// The pages, each as a labelled picture then its words, and the ask last.
-export function buildContent(
-  type: DocumentType,
-  pages: ExtractPage[],
-): Anthropic.ContentBlockParam[] {
+// The pages, each as a labelled picture then its words.
+export function pageBlocks(pages: ExtractPage[]): Anthropic.ContentBlockParam[] {
   const content: Anthropic.ContentBlockParam[] = [];
-
   for (const page of pages) {
     content.push({ type: 'text', text: `Page ${page.number}:` });
     content.push({
@@ -86,7 +82,13 @@ export function buildContent(
       text: `Page ${page.number} words, as we read them:\n${textLayerToText(page.textLayer)}`,
     });
   }
-
-  content.push({ type: 'text', text: FINAL_ASK[type] });
   return content;
+}
+
+// The pages, then the ask last.
+export function buildContent(
+  type: DocumentType,
+  pages: ExtractPage[],
+): Anthropic.ContentBlockParam[] {
+  return [...pageBlocks(pages), { type: 'text', text: FINAL_ASK[type] }];
 }

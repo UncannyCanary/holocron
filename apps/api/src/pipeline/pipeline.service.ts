@@ -8,6 +8,9 @@ import { DB } from '../db/db.module.js';
 import { document, field, page, run, runStep } from '../db/schema.js';
 import { extract } from '../extract/extract.js';
 import { spentThisMonth } from '../extract/spend.js';
+import { splitFile } from '../extract/split.js';
+// biome-ignore lint/style/useImportType: Nest reads this at runtime to inject it; a type-only import breaks that.
+import { JobsService } from '../jobs/jobs.module.js';
 import { type BuiltPage, buildPages } from '../pages/pages.js';
 import { dataPath } from '../paths.js';
 import { checkPageCount } from '../uploads/upload-limits.js';
@@ -34,6 +37,7 @@ export class PipelineService {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(MODEL_CLIENT) private readonly client: Anthropic,
+    private readonly jobs: JobsService,
   ) {}
 
   async run(documentId: string): Promise<void> {
@@ -48,17 +52,32 @@ export class PipelineService {
     const attempt = await this.startRun(documentId);
     await this.db.update(document).set({ status: 'processing' }).where(eq(document.id, documentId));
 
+    // A sample's pages belong to its canonical row, and a document split out
+    // of a file shares the pages of the row that was uploaded.
+    const pagesOwner = doc.documentId ?? doc.sourceId ?? doc.id;
+
     try {
       const built = await this.step(attempt.id, 'rendered', () =>
-        this.renderPages(doc.id, doc.filePath),
+        this.renderPages(pagesOwner, doc.filePath),
       );
-      await this.step(attempt.id, 'text_layer', () => this.storePages(doc.id, built));
+      await this.step(attempt.id, 'text_layer', () => this.storePages(pagesOwner, built));
 
-      const pages = await this.db
+      const filePages = await this.db
         .select()
         .from(page)
-        .where(eq(page.documentId, doc.id))
+        .where(eq(page.documentId, pagesOwner))
         .orderBy(page.number);
+
+      const split = await this.step(attempt.id, 'split', () =>
+        this.splitIntoDocuments(doc, filePages),
+      );
+      if (split.parked !== undefined) {
+        await this.endRun(attempt.id, split.parked);
+        await this.db.update(document).set({ status: 'queued' }).where(eq(document.id, documentId));
+        this.logger.warn(`Document ${documentId} is parked: ${split.parked}`);
+        return;
+      }
+      const pages = split.pages;
 
       const result = await this.step(attempt.id, 'extracted', () =>
         this.readWithModel(doc.type, pages),
@@ -82,11 +101,14 @@ export class PipelineService {
         .set({
           model: result.model,
           // Every input token, cached or not, so the ledger never reads low.
+          // The split's tokens are counted here too, at this model's price,
+          // which reads a little high: the cheaper model cost less.
           inputTokens:
             result.usage.input_tokens +
             (result.usage.cache_creation_input_tokens ?? 0) +
-            (result.usage.cache_read_input_tokens ?? 0),
-          outputTokens: result.usage.output_tokens,
+            (result.usage.cache_read_input_tokens ?? 0) +
+            split.inputTokens,
+          outputTokens: result.usage.output_tokens + split.outputTokens,
         })
         .where(eq(run.id, attempt.id));
 
@@ -155,6 +177,87 @@ export class PipelineService {
         .where(eq(runStep.id, row.id));
       throw error;
     }
+  }
+
+  // Which of the file's pages this document is, and whether the file holds
+  // more. The row that was uploaded asks the cheaper model once, keeps the
+  // first document's pages for itself, and makes a row of its own for every
+  // further document, each with its pages and a job on the queue. A sample,
+  // a contract, a one page file, or a document already split out of a file
+  // has nothing to ask.
+  private async splitIntoDocuments(
+    doc: typeof document.$inferSelect,
+    filePages: Array<typeof page.$inferSelect>,
+  ): Promise<{
+    pages: Array<typeof page.$inferSelect>;
+    parked?: string;
+    inputTokens: number;
+    outputTokens: number;
+  }> {
+    const own = (numbers: number[] | null) =>
+      numbers === null ? filePages : filePages.filter((row) => numbers.includes(row.number));
+    const nothing = { inputTokens: 0, outputTokens: 0 };
+
+    if (
+      doc.documentId !== null ||
+      doc.sourceId !== null ||
+      doc.type === 'contract' ||
+      filePages.length < 2
+    ) {
+      return { pages: own(doc.pageNumbers), ...nothing };
+    }
+
+    const withImages = await Promise.all(
+      filePages.map(async (row) => ({
+        number: row.number,
+        image: await readFile(row.imagePath),
+        textLayer: row.textLayer as PageTextLayer,
+      })),
+    );
+    const result = await splitFile(withImages, {
+      client: this.client,
+      spentThisMonthUsd: () => spentThisMonth(this.db),
+    });
+    if (result.status === 'parked') {
+      return { pages: filePages, parked: result.reason, ...nothing };
+    }
+    if (result.status === 'failed') {
+      throw new Error(result.error);
+    }
+
+    const [first, ...rest] = result.documents;
+    const tokens = {
+      inputTokens:
+        result.usage.input_tokens +
+        (result.usage.cache_creation_input_tokens ?? 0) +
+        (result.usage.cache_read_input_tokens ?? 0),
+      outputTokens: result.usage.output_tokens,
+    };
+    if (rest.length === 0) {
+      return { pages: filePages, ...tokens };
+    }
+
+    await this.db.update(document).set({ pageNumbers: first.pages }).where(eq(document.id, doc.id));
+    for (const more of rest) {
+      const [child] = await this.db
+        .insert(document)
+        .values({
+          workspaceId: doc.workspaceId,
+          sourceId: doc.id,
+          type: more.type,
+          status: 'queued',
+          filePath: doc.filePath,
+          pageNumbers: more.pages,
+        })
+        .returning();
+      const [attempt] = await this.db.insert(run).values({ documentId: child.id }).returning();
+      await this.mark(attempt.id, 'received');
+      await this.jobs.sendProcessDocument({ documentId: child.id, workspaceId: doc.workspaceId });
+    }
+    this.logger.log(
+      `Document ${doc.id} holds ${result.documents.length} documents; ${rest.length} more queued.`,
+    );
+    return { pages: own(first.pages), ...tokens };
   }
 
   // Makes a picture of every page and reads the words off it. A document that

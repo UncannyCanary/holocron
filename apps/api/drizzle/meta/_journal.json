@@ -15,6 +15,13 @@
       "when": 1788844429065,
       "tag": "0001_add_field_currency_and_correction_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788890911587,
+      "tag": "0002_split_documents",
+      "breakpoints": true
     }
   ]
 }

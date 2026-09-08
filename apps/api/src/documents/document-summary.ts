@@ -181,6 +181,7 @@ const STEP_LABELS: Record<string, string> = {
   received: 'Saving the file',
   rendered: 'Rendering the pages',
   text_layer: 'Reading the text',
+  split: 'Looking for more than one document',
   extracted: 'Asking the model to read it',
   grounded: 'Finding values on the page',
   checked: 'Checking the numbers',
