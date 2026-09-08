@@ -7,6 +7,7 @@ import { document, workspace } from '../db/schema.js';
 import {
   checkDailyUploadQuota,
   checkFileSize,
+  checkFileType,
   checkFreeSpace,
   checkPageCount,
 } from './upload-limits.js';
@@ -20,6 +21,25 @@ describe('upload limits', () => {
     expect(checkFileSize(11 * 1024 * 1024)).toEqual({
       ok: false,
       message: 'This file is over the 10 MB limit.',
+    });
+  });
+
+  it('accepts a PDF, a PNG, and a JPEG by their first bytes', () => {
+    expect(checkFileType(Buffer.from('%PDF-1.7 rest of file'))).toEqual({ ok: true });
+    expect(checkFileType(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1]))).toEqual(
+      { ok: true },
+    );
+    expect(checkFileType(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]))).toEqual({ ok: true });
+  });
+
+  it('refuses any other file, whatever its name says', () => {
+    expect(checkFileType(Buffer.from('MZ this is a program'))).toEqual({
+      ok: false,
+      message: 'Holocron takes PDF, PNG, and JPEG files.',
+    });
+    expect(checkFileType(Buffer.alloc(0))).toEqual({
+      ok: false,
+      message: 'Holocron takes PDF, PNG, and JPEG files.',
     });
   });
 

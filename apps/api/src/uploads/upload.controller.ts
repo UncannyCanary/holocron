@@ -31,7 +31,12 @@ import { dataPath } from '../paths.js';
 import { NO_WORKSPACE_MESSAGE } from '../workspace/workspace.controller.js';
 // biome-ignore lint/style/useImportType: Nest reads this at runtime to inject it; a type-only import breaks that.
 import { WorkspaceService } from '../workspace/workspace.service.js';
-import { checkDailyUploadQuota, checkFileSize, checkFreeSpaceOn } from './upload-limits.js';
+import {
+  checkDailyUploadQuota,
+  checkFileSize,
+  checkFileType,
+  checkFreeSpaceOn,
+} from './upload-limits.js';
 
 // What multer hands us. Only these four parts are used.
 type UploadedFileLike = {
@@ -106,6 +111,11 @@ export class UploadController {
     const size = checkFileSize(file.size);
     if (!size.ok) {
       throw new HttpException(size.message, HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    const kind = checkFileType(file.buffer);
+    if (!kind.ok) {
+      throw new HttpException(kind.message, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
 
     const quota = await checkDailyUploadQuota(this.db, workspace.id);

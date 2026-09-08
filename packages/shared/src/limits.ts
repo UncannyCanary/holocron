@@ -26,6 +26,7 @@ export const MESSAGES = {
   tooManyUploadsToday: `This workspace has used its ${LIMITS.uploadsPerWorkspacePerDay} uploads for today. The sample documents still work.`,
   fileTooLarge: 'This file is over the 10 MB limit.',
   tooManyPages: `This file has more than ${LIMITS.maxPagesPerDocument} pages.`,
+  wrongFileType: 'Holocron takes PDF, PNG, and JPEG files.',
   outOfRoom: 'Holocron is out of room for new files right now. The sample documents still work.',
   spendCapReached:
     'Holocron is at its monthly processing budget. You can still review every document already here.',

@@ -30,6 +30,23 @@ export async function checkFreeSpaceOn(dir: string): Promise<LimitCheck> {
   return checkFreeSpace(disk.bavail * disk.bsize);
 }
 
+// The first bytes of the three kinds of file we take. The name and the
+// declared type are what the sender says; the bytes are what the file is.
+const SIGNATURES = [
+  Buffer.from('%PDF-'),
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  Buffer.from([0xff, 0xd8, 0xff]),
+];
+
+// Only PDF, PNG, and JPEG, decided from the first bytes of the file.
+export function checkFileType(bytes: Buffer): LimitCheck {
+  const known = SIGNATURES.some(
+    (signature) =>
+      bytes.length >= signature.length && bytes.subarray(0, signature.length).equals(signature),
+  );
+  return known ? { ok: true } : { ok: false, message: MESSAGES.wrongFileType };
+}
+
 // 20 pages per document, checked once the page count is known.
 export function checkPageCount(pages: number): LimitCheck {
   if (pages > LIMITS.maxPagesPerDocument) {

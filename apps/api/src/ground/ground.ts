@@ -241,13 +241,17 @@ function amountOf(text: string): number | null {
 
 // Our schema holds an amount as a number, so a page that prints 181.50 hands
 // us 181.5, and the two no longer look alike as text. One word that says the
-// same amount is the value. Only one word: an amount never wraps.
+// same amount is the value. Only one word: an amount never wraps. The sign is
+// ignored, because a discount is printed as -150.00 and held as 150.
 function findNumber(spans: Span[], value: string): [number, number] | null {
   const wanted = amountOf(value.trim());
   if (wanted === null || !/^-?\d+(\.\d+)?$/.test(value.trim())) {
     return null;
   }
-  const at = spans.findIndex((span) => amountOf(span.text) === wanted);
+  const at = spans.findIndex((span) => {
+    const amount = amountOf(span.text);
+    return amount !== null && Math.abs(amount) === Math.abs(wanted);
+  });
   return at === -1 ? null : [at, at];
 }
 

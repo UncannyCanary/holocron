@@ -42,6 +42,9 @@ export class JobsService {
     await this.boss.send(PROCESS_DOCUMENT, job, {
       ...(tx === undefined ? {} : { db: fromDrizzle(tx, sql) }),
       group: { id: job.workspaceId ?? SAMPLES_GROUP },
+      // One waiting job per document. A restart that sends the samples again
+      // while their first jobs are still queued must not read them twice.
+      singletonKey: job.documentId,
     });
   }
 }

@@ -7,9 +7,11 @@ import { fileURLToPath } from 'node:url';
 const REPO_ROOT = path.resolve(fileURLToPath(import.meta.url), '../../../..');
 
 // Uploaded files and rendered page images. Defaults to the Docker volume;
-// override with DATA_DIR for a local run outside Docker.
+// override with DATA_DIR for a local run outside Docker. A relative DATA_DIR
+// is taken from the repo root, so the API and the worker agree on the path
+// whatever folder each was started from.
 export function dataPath(...segments: string[]): string {
-  const base = process.env.DATA_DIR ?? '/data';
+  const base = path.resolve(REPO_ROOT, process.env.DATA_DIR ?? '/data');
   return path.join(base, ...segments);
 }
 

@@ -9,6 +9,12 @@ import { stopOcrWorker } from '../pages/ocr-pages.js';
 import { samplesPath } from '../paths.js';
 import { SeedService } from './seed.service.js';
 
+// Page images and the OCR language file go under .scratch, not the /data
+// volume a container would have, so this runs on a fresh clone with no .env.
+const scratch = fileURLToPath(new URL('../../../../.scratch/data', import.meta.url));
+process.env.DATA_DIR ??= scratch;
+process.env.OCR_CACHE_DIR ??= `${scratch}/tesseract`;
+
 // The two receipt photos go through real OCR, so this test is slow the first
 // time it runs against a fresh database. Every run after that is instant: it
 // finds the rows already there and does nothing.

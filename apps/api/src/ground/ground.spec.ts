@@ -203,6 +203,13 @@ describe('an amount written with more decimals than the value', () => {
     expect(found).toEqual({ page: 1, box: boxOf(amountLine[2]) });
   });
 
+  it('boxes a discount the page prints with a minus sign', () => {
+    const discountLine = line(0, 'Discount -150.00');
+    const found = ground({ value: '150', quote: '-150.00', page: 1 }, [pdfPage(1, discountLine)]);
+
+    expect(found).toEqual({ page: 1, box: boxOf(discountLine[1]) });
+  });
+
   it('gives no box when the amount is glued to its label', () => {
     const gluedLine = line(0, 'Total:181.50 paid');
     const found = ground({ value: '181.5', quote: 'Total:181.50', page: 1 }, [

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import type { Span } from '@holocron/shared';
+import { MESSAGES, type Span } from '@holocron/shared';
 import { createCanvas } from '@napi-rs/canvas';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { PDFPageProxy, RenderParameters } from 'pdfjs-dist/types/src/display/api.js';
@@ -147,7 +147,10 @@ async function readWords(
 
 // Walks a PDF one page at a time. One page is in memory at once, because a
 // Letter page at 300 dpi is about 34 MB of canvas and the server has 2 GB.
-export async function* readPdfPages(data: Uint8Array): AsyncGenerator<PdfPage> {
+export async function* readPdfPages(
+  data: Uint8Array,
+  options: { maxPages?: number } = {},
+): AsyncGenerator<PdfPage> {
   const loading = getDocument({
     data,
     standardFontDataUrl,
@@ -157,6 +160,10 @@ export async function* readPdfPages(data: Uint8Array): AsyncGenerator<PdfPage> {
   const pdf = await loading.promise;
 
   try {
+    // Asked before any page is drawn, so a long file costs nothing.
+    if (options.maxPages !== undefined && pdf.numPages > options.maxPages) {
+      throw new Error(MESSAGES.tooManyPages);
+    }
     for (let number = 1; number <= pdf.numPages; number += 1) {
       const page = await pdf.getPage(number);
       try {

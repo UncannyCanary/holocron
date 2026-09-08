@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type Anthropic from '@anthropic-ai/sdk';
-import type { PageTextLayer } from '@holocron/shared';
+import { LIMITS, type PageTextLayer } from '@holocron/shared';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
@@ -171,7 +171,9 @@ export class PipelineService {
       return null;
     }
 
-    const built = await buildPages(filePath, dataPath('pages', documentId));
+    const built = await buildPages(filePath, dataPath('pages', documentId), {
+      maxPages: LIMITS.maxPagesPerDocument,
+    });
     const room = checkPageCount(built.length);
     if (!room.ok) {
       throw new Error(room.message);

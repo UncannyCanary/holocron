@@ -66,13 +66,17 @@ async function buildImagePage(file: Buffer, outDir: string): Promise<BuiltPage[]
   ];
 }
 
-async function buildPdfPages(file: Buffer, outDir: string): Promise<BuiltPage[]> {
+async function buildPdfPages(
+  file: Buffer,
+  outDir: string,
+  options: BuildOptions,
+): Promise<BuiltPage[]> {
   const pages: BuiltPage[] = [];
 
   // pdf.js takes a plain Uint8Array and turns a Buffer away.
   const data = new Uint8Array(file.buffer, file.byteOffset, file.byteLength);
 
-  for await (const page of readPdfPages(data)) {
+  for await (const page of readPdfPages(data, options)) {
     const imagePath = path.join(outDir, `${page.number}.png`);
     await writeFile(imagePath, page.image);
 
@@ -106,9 +110,18 @@ async function buildPdfPages(file: Buffer, outDir: string): Promise<BuiltPage[]>
 
 // Turns one document into its pages: a picture of each page on disk, and a
 // text layer holding every word with its box from 0 to 1, origin top left.
-export async function buildPages(filePath: string, outDir: string): Promise<BuiltPage[]> {
+export type BuildOptions = {
+  // A PDF with more pages than this is refused before any page is drawn.
+  maxPages?: number;
+};
+
+export async function buildPages(
+  filePath: string,
+  outDir: string,
+  options: BuildOptions = {},
+): Promise<BuiltPage[]> {
   const file = await readFile(filePath);
   await mkdir(outDir, { recursive: true });
 
-  return isPdf(file) ? buildPdfPages(file, outDir) : buildImagePage(file, outDir);
+  return isPdf(file) ? buildPdfPages(file, outDir, options) : buildImagePage(file, outDir);
 }
