@@ -21,8 +21,24 @@ import { MODEL_CLIENT } from './model-client.js';
 
 type StepName = (typeof runStep.name.enumValues)[number];
 
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+// The sentence a person sees when a step fails. A message that came from
+// the database or the file system is a page of queries and paths, so that
+// becomes one plain sentence and the detail goes to the log. Any message is
+// cut to a sentence's length, since it is shown on the queue and the review
+// screen.
+const LONGEST_MESSAGE = 240;
+
+function plainMessage(error: unknown, logger: Logger): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  if (raw.startsWith('Failed query') || /^E[A-Z]+:/.test(raw)) {
+    logger.error(raw.slice(0, 2000));
+    return 'Holocron could not save what it read from this document. The detail is in the log.';
+  }
+  if (raw.length > LONGEST_MESSAGE) {
+    logger.error(raw.slice(0, 2000));
+    return `${raw.slice(0, LONGEST_MESSAGE).trimEnd()}…`;
+  }
+  return raw;
 }
 
 // The steps of a run, in order: received, rendered, text layer, extracted,
@@ -121,7 +137,7 @@ export class PipelineService {
       await this.endRun(attempt.id, null);
       await this.db.update(document).set({ status: 'ready' }).where(eq(document.id, documentId));
     } catch (error) {
-      const message = messageOf(error);
+      const message = plainMessage(error, this.logger);
       await this.mark(attempt.id, 'failed', message);
       await this.endRun(attempt.id, message);
       await this.db.update(document).set({ status: 'failed' }).where(eq(document.id, documentId));
@@ -173,7 +189,7 @@ export class PipelineService {
     } catch (error) {
       await this.db
         .update(runStep)
-        .set({ endedAt: new Date(), error: messageOf(error) })
+        .set({ endedAt: new Date(), error: plainMessage(error, this.logger) })
         .where(eq(runStep.id, row.id));
       throw error;
     }

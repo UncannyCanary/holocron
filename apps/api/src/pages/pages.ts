@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { PageTextLayer } from '@holocron/shared';
 import sharp from 'sharp';
+import { cleanSpans } from './clean-text.js';
 import { readWordsWithOcr } from './ocr-pages.js';
 import { OCR_DPI, readPdfPages } from './pdf-pages.js';
 
@@ -123,5 +124,11 @@ export async function buildPages(
   const file = await readFile(filePath);
   await mkdir(outDir, { recursive: true });
 
-  return isPdf(file) ? buildPdfPages(file, outDir, options) : buildImagePage(file, outDir);
+  const pages = isPdf(file)
+    ? await buildPdfPages(file, outDir, options)
+    : await buildImagePage(file, outDir);
+  return pages.map((page) => ({
+    ...page,
+    textLayer: { ...page.textLayer, spans: cleanSpans(page.textLayer.spans) },
+  }));
 }
