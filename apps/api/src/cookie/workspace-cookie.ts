@@ -57,7 +57,10 @@ export function setWorkspaceCookie(res: Response, payload: WorkspaceCookiePayloa
   res.cookie(WORKSPACE_COOKIE_NAME, signWorkspaceCookie(payload), {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    // Secure only when the request itself came over https. Behind Caddy that
+    // is read from the forwarded header, so it is on for the real site and
+    // off on plain http://localhost, where Safari would otherwise drop it.
+    secure: Boolean(res.req?.secure),
     path: '/',
     // A year. The workspace itself, not the cookie, is what expires: the
     // nightly job removes it after 14 days untouched.
