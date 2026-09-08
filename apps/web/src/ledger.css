@@ -163,10 +163,10 @@
   /* A value marked where it sits on the page. The box is the exact union of
      the matched words, so it covers the whole value and nothing beside it. A
      value that was not found on the page has no mark at all. */
-  /* The stored box is exact. On screen the mark breathes 3px on every side,
+  /* The stored box is exact. On screen the mark breathes 2px on every side,
      so the ring never sits on the ink of the letters. */
   .mark {
-    @apply absolute box-content cursor-pointer rounded-[2px] border-0 p-[3px] -m-[3px];
+    @apply absolute box-content cursor-pointer rounded-[2px] border-0 p-[2px] -m-[2px];
   }
   .mark-verified {
     @apply bg-verified-dot/10 ring-[1.5px] ring-verified-dot;
