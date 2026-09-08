@@ -162,12 +162,22 @@ function QueueRow({
       }`}
     >
       <DocumentDot doc={doc} />
-      <span>
-        <span className={`text-lede ${isSelected ? 'font-medium' : ''}`}>{doc.name}</span>
-        <div className={`mt-[3px] text-[12.5px] ${whyColor}`}>{doc.why}</div>
+      <span className="min-w-0">
+        <span
+          className={`block truncate text-lede ${isSelected ? 'font-medium' : ''}`}
+          title={doc.name}
+        >
+          {doc.name}
+        </span>
+        <div className={`mt-[3px] truncate text-[12.5px] ${whyColor}`} title={doc.why}>
+          {doc.why}
+        </div>
       </span>
       <span className="text-note text-ink-soft">{TYPE_LABELS[doc.type]}</span>
-      <span className={`text-note ${doc.counterparty ? 'text-ink' : 'text-ink-faint'}`}>
+      <span
+        className={`block truncate text-note ${doc.counterparty ? 'text-ink' : 'text-ink-faint'}`}
+        title={doc.counterparty ?? undefined}
+      >
         {doc.counterparty ?? '—'}
       </span>
       <span

@@ -74,7 +74,11 @@ function columnsOf(sort: SortColumn, dir: 'asc' | 'desc', onSort: (column: SortC
     columnHelper.accessor('name', {
       id: 'name',
       header: head('Name', 'name'),
-      cell: (ctx) => <span className="text-lede">{ctx.row.original.name}</span>,
+      cell: (ctx) => (
+        <span className="block truncate text-lede" title={ctx.row.original.name}>
+          {ctx.row.original.name}
+        </span>
+      ),
     }),
     columnHelper.accessor('type', {
       id: 'type',
@@ -88,7 +92,8 @@ function columnsOf(sort: SortColumn, dir: 'asc' | 'desc', onSort: (column: SortC
       header: head('Vendor or party', 'vendor'),
       cell: (ctx) => (
         <span
-          className={`truncate text-note ${ctx.row.original.counterparty ? 'text-ink' : 'text-ink-faint'}`}
+          className={`block truncate text-note ${ctx.row.original.counterparty ? 'text-ink' : 'text-ink-faint'}`}
+          title={ctx.row.original.counterparty ?? undefined}
         >
           {ctx.row.original.counterparty ?? '—'}
         </span>
@@ -487,10 +492,15 @@ function FilterMenu({
       name="table-filter"
       className="relative"
       onBlur={(event) => {
-        const next = event.relatedTarget;
-        if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
-          event.currentTarget.open = false;
-        }
+        // A click on a label inside the menu takes focus off the button for
+        // an instant before it lands on the box or the field. Waiting a tick
+        // lets focus settle, so only a click somewhere else closes the menu.
+        const details = event.currentTarget;
+        window.setTimeout(() => {
+          if (!details.contains(document.activeElement)) {
+            details.open = false;
+          }
+        }, 0);
       }}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
