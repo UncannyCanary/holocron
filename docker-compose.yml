@@ -25,12 +25,12 @@ services:
       PROCESS_ROLE: api
       DATABASE_URL: postgres://holocron:holocron@postgres:5432/holocron
       PORT: 3000
+      COOKIE_SECRET: dev-secret-change-me
+      ACCESS_CODE: ${ACCESS_CODE:-}
     # Published so the Vite dev server on 5173 can proxy /api to it, which is
     # how the web app is worked on without rebuilding the image each time.
     ports:
       - "3000:3000"
-      COOKIE_SECRET: dev-secret-change-me
-      ACCESS_CODE: ${ACCESS_CODE:-}
     depends_on:
       postgres:
         condition: service_healthy
