@@ -53,4 +53,5 @@ There is no sign in and no account creation. One shared access code opens the do
 - `apps/api` is the NestJS app. `main.ts` serves the API and `worker.ts` runs the jobs. They share one codebase and one Docker image.
 - `packages/shared` holds the Zod schemas, the limits, and the money formatting both sides use.
 - `samples/` holds the eight sample documents and their licences.
+- `docs/using.md` walks through the product screen by screen.
 - `decisions.md` explains why it is built this way. `docs/design.md` explains how: the parts, the tables, and the life of a document.
