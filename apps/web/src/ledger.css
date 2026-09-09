@@ -1,5 +1,5 @@
-/* The Ledger system: the type, spacing, and colour choices from
-   .scratch/holocron/design/, as Tailwind theme tokens. Every screen shares
+/* The Ledger system: the type, spacing, and colour choices of the
+   design, as Tailwind theme tokens. Every screen shares
    this file so they read as one system instead of each inventing its own. */
 
 @import "tailwindcss";

@@ -8,7 +8,7 @@ I am a Star Wars fan. A [holocron](https://starwars.fandom.com/wiki/Holocron) is
 
 ## The problem I chose
 
-The brief was wide: take messy documents and turn them into clean, structured data that can be searched and queried. Any document, any data. A brief that wide invites a demo that does a little of everything, and I did not want to build that, because a little of everything is what every document tool already shows.
+The problem I started from was wide: take messy documents and turn them into clean, structured data that can be searched and queried. Any document, any data. A problem that wide invites a demo that does a little of everything, and I did not want to build that, because a little of everything is what every document tool already shows.
 
 So I picked one person and the documents that land on their desk. The person is a bookkeeper. The documents are invoices, receipts, and contracts. Three types, no more, and no way for a user to add a fourth.
 
@@ -99,7 +99,7 @@ My estimate was about three dollars for a workspace of twenty documents. Measure
 
 There is no sign up form and no login. One shared access code opens the door, and past it each browser gets its own workspace, remembered by a cookie that the server signs so it cannot be forged.
 
-I left accounts out because they are a different problem from the one I was solving. A sign in layer is well understood and can be added at any point. Building it now would have taken days away from proving what was read, which no one else would have built for me. A reviewer should also be looking at documents ten seconds after opening the link, and a sign up form is the surest way to lose them before that.
+I left accounts out because they are a different problem from the one I was solving. A sign in layer is well understood and can be added at any point. Building it now would have taken days away from proving what was read, which no one else would have built for me. Someone opening Holocron for the first time should be looking at documents ten seconds later, and a sign up form is the surest way to lose them before that.
 
 The settings page holds a link that reopens the workspace on another browser. Untouched workspaces are deleted after two weeks, files included. Limits on uploads, new workspaces, and requests keep one address from spending everyone's budget.
 

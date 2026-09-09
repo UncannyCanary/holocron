@@ -14,9 +14,7 @@ Four invoices, written by us. The JSON model for each one is in `models.mjs`. Ru
   items, no discount.
 - `invoice-3-planted-error.pdf`: the toner line prints 12.00 where 2 times 60.00 should
   print 120.00. The subtotal on the page (165.00) matches the correct line total, not the
-  printed one, so the line math check and the subtotal check both fail. This is the same
-  scenario as the review screen mockup at
-  `.scratch/holocron/design/review-screen/Main.dc.html`.
+  printed one, so the line math check and the subtotal check both fail.
 - `invoice-4-gst.pdf`: an Indian marketplace tax invoice. Prices carry the tax inside,
   each line prints its discount, taxable value, SGST and CGST, and the foot repeats them
   with a grand total in rupees. Everything adds up. The seller, the buyer, the addresses,
