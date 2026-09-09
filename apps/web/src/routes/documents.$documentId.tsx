@@ -289,7 +289,7 @@ function ReviewScreen({ documentId }: { documentId: string }) {
             flashAt={flashAt}
             labelOf={panel.labelOf}
             onPick={pick}
-            note={<SameFileNote others={doc.sameFile} />}
+            note={<SameFileNote own={doc.pages.map((each) => each.number)} others={doc.sameFile} />}
           />
           <FieldPanel
             panel={panel}
@@ -319,15 +319,15 @@ function ReviewScreen({ documentId }: { documentId: string }) {
 // Where the rest of an uploaded file went, when it held more than one
 // document. Each other document is named and linked, with its pages, so a
 // person who opens page 1 of a two seller order can find page 2.
-function SameFileNote({ others }: { others: SameFileDocument[] }) {
+function SameFileNote({ own, others }: { own: number[]; others: SameFileDocument[] }) {
   if (others.length === 0) return null;
   const total = others.length + 1;
   return (
     <>
-      This file holds {total} documents.{' '}
+      This file holds {total} documents. This one is {pagesText(own).toLowerCase()},{' '}
       {others.map((other, index) => (
         <span key={other.id}>
-          {pagesText(other.pageNumbers)} is{' '}
+          {pagesText(other.pageNumbers).toLowerCase()} is{' '}
           <Link
             to="/documents/$documentId"
             params={{ documentId: other.id }}
@@ -335,7 +335,7 @@ function SameFileNote({ others }: { others: SameFileDocument[] }) {
           >
             {other.name}
           </Link>
-          {index < others.length - 1 ? ', ' : '.'}
+          {index < others.length - 1 ? ', ' : ''}
         </span>
       ))}
     </>

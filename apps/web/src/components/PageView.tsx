@@ -44,7 +44,13 @@ export function PageView({
 }) {
   const [zoom, setZoom] = useState(1);
 
-  const page = pages.find((each) => each.number === pageNumber) ?? pages[0];
+  // A document split out of a file keeps the file's page numbers, so the
+  // count shown is this document's own place in its pages, not the number.
+  const place = Math.max(
+    0,
+    pages.findIndex((each) => each.number === pageNumber),
+  );
+  const page = pages[place];
   const scale = (FIT_WIDTH / page.widthPx) * zoom;
   const marks = fields.filter((each) => each.box !== null && each.page === page.number);
 
@@ -53,23 +59,23 @@ export function PageView({
       <div className="flex h-10 flex-none items-center justify-between px-4 text-xs text-ink-soft">
         <div className="flex items-center gap-2">
           <span>
-            Page {page.number} of {pages.length}
+            Page {place + 1} of {pages.length}
           </span>
           {pages.length > 1 && (
             <>
               <button
                 type="button"
                 className="btn h-[26px] px-2"
-                disabled={page.number <= 1}
-                onClick={() => onPageNumber(page.number - 1)}
+                disabled={place <= 0}
+                onClick={() => onPageNumber(pages[place - 1].number)}
               >
                 Back
               </button>
               <button
                 type="button"
                 className="btn h-[26px] px-2"
-                disabled={page.number >= pages.length}
-                onClick={() => onPageNumber(page.number + 1)}
+                disabled={place >= pages.length - 1}
+                onClick={() => onPageNumber(pages[place + 1].number)}
               >
                 Next
               </button>
