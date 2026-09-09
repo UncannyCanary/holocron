@@ -15,7 +15,7 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import type { Request, Response } from 'express';
 import { workspaceIdFromCookieHeader } from '../cookie/workspace-cookie.js';
 import type { Db } from '../db/client.js';
@@ -167,6 +167,7 @@ export class DocumentsController {
       id: doc.id,
       type: doc.type as DocumentType,
       status: doc.status,
+      sameFile: await this.sameFile(doc),
       fields: fields.map((row) => ({
         id: row.id,
         name: row.name,
@@ -353,6 +354,42 @@ export class DocumentsController {
       throw new HttpException(NO_SUCH_DOCUMENT, HttpStatus.NOT_FOUND);
     }
     return doc;
+  }
+
+  // The other documents split out of the same file, in page order, so the
+  // review screen can say where the rest of the file went. Empty for a file
+  // that held one document, which is nearly all of them.
+  private async sameFile(doc: DocumentRow) {
+    const rootId = doc.sourceId ?? doc.id;
+    const family = await this.db
+      .select()
+      .from(document)
+      .where(or(eq(document.id, rootId), eq(document.sourceId, rootId)));
+    const others = family.filter((row) => row.id !== doc.id);
+    if (others.length === 0) {
+      return [];
+    }
+    const fields = await this.db
+      .select()
+      .from(field)
+      .where(
+        inArray(
+          field.documentId,
+          others.map((row) => row.id),
+        ),
+      );
+    return others
+      .map((row) => ({
+        id: row.id,
+        name: documentDisplayName(
+          row.type as DocumentType,
+          fields.filter((each) => each.documentId === row.id),
+          path.basename(row.filePath),
+        ),
+        pageNumbers: row.pageNumbers ?? [],
+        status: row.status,
+      }))
+      .sort((left, right) => (left.pageNumbers[0] ?? 0) - (right.pageNumbers[0] ?? 0));
   }
 
   private async summarize(doc: DocumentRow) {

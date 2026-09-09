@@ -5,7 +5,12 @@ import { FieldPanel } from '../components/FieldPanel';
 import { Kbd } from '../components/Kbd';
 import { PageView } from '../components/PageView';
 import { type Hint, Screen } from '../components/Screen';
-import { type DocumentField, type DocumentSummary, messageOf } from '../lib/api';
+import {
+  type DocumentField,
+  type DocumentSummary,
+  messageOf,
+  type SameFileDocument,
+} from '../lib/api';
 import { sortWorstFirst, stateOf } from '../lib/document-display';
 import { agoText, durationText } from '../lib/relative-time';
 import { buildPanel, fieldText, type Panel } from '../lib/review-layout';
@@ -284,6 +289,7 @@ function ReviewScreen({ documentId }: { documentId: string }) {
             flashAt={flashAt}
             labelOf={panel.labelOf}
             onPick={pick}
+            note={<SameFileNote others={doc.sameFile} />}
           />
           <FieldPanel
             panel={panel}
@@ -308,6 +314,42 @@ function ReviewScreen({ documentId }: { documentId: string }) {
       </div>
     </Screen>
   );
+}
+
+// Where the rest of an uploaded file went, when it held more than one
+// document. Each other document is named and linked, with its pages, so a
+// person who opens page 1 of a two seller order can find page 2.
+function SameFileNote({ others }: { others: SameFileDocument[] }) {
+  if (others.length === 0) return null;
+  const total = others.length + 1;
+  return (
+    <>
+      This file holds {total} documents.{' '}
+      {others.map((other, index) => (
+        <span key={other.id}>
+          {pagesText(other.pageNumbers)} is{' '}
+          <Link
+            to="/documents/$documentId"
+            params={{ documentId: other.id }}
+            className="text-ink-soft"
+          >
+            {other.name}
+          </Link>
+          {index < others.length - 1 ? ', ' : '.'}
+        </span>
+      ))}
+    </>
+  );
+}
+
+// "Page 2", "Pages 2 and 3", or "Pages 2 to 5".
+function pagesText(numbers: number[]): string {
+  if (numbers.length === 0) return 'Another part';
+  if (numbers.length === 1) return `Page ${numbers[0]}`;
+  const first = numbers[0];
+  const last = numbers[numbers.length - 1];
+  if (numbers.length === 2) return `Pages ${first} and ${last}`;
+  return `Pages ${first} to ${last}`;
 }
 
 function Note({ children }: { children: ReactNode }) {

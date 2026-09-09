@@ -487,6 +487,15 @@ describe('the pipeline, end to end', () => {
         .set('Cookie', cookie);
       expect(firstDetail.body.pages.map((each: { number: number }) => each.number)).toEqual([1]);
 
+      // Each names the other, with its pages, so the screen can say where
+      // the rest of the file went.
+      expect(firstDetail.body.sameFile).toEqual([
+        { id: second.id, name: expect.any(String), pageNumbers: [2], status: 'ready' },
+      ]);
+      expect(detail.body.sameFile).toEqual([
+        { id: uploaded.id, name: expect.any(String), pageNumbers: [1], status: 'ready' },
+      ]);
+
       // The split is a step on the first document's timeline.
       const [attempt] = await db.select().from(run).where(eq(run.documentId, uploaded.id));
       const steps = await db.select().from(runStep).where(eq(runStep.runId, attempt.id));

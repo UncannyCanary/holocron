@@ -137,11 +137,21 @@ export type DocumentPage = {
   imageUrl: string;
 };
 
+// Another document that came out of the same uploaded file.
+export type SameFileDocument = {
+  id: string;
+  name: string;
+  pageNumbers: number[];
+  status: DocumentStatus;
+};
+
 // One document with everything the review screen shows.
 export type DocumentDetail = {
   id: string;
   type: DocumentType;
   status: DocumentStatus;
+  // The rest of the file, when it held more than one document.
+  sameFile: SameFileDocument[];
   fields: DocumentField[];
   checks: DocumentCheck[];
   pages: DocumentPage[];

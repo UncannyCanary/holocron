@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import type { DocumentField, DocumentPage, FieldTrust } from '../lib/api';
 
 // How wide a page is drawn before anyone touches the zoom. The stored image
@@ -28,10 +28,13 @@ export function PageView({
   flashAt,
   labelOf,
   onPick,
+  note,
 }: {
   pages: DocumentPage[];
   fields: DocumentField[];
   pageNumber: number;
+  // A short line beside the page count, such as where the rest of a file went.
+  note?: ReactNode;
   onPageNumber: (number: number) => void;
   selectedId: string | null;
   // Changes every time a field is picked, which replays the flash.
@@ -72,6 +75,7 @@ export function PageView({
               </button>
             </>
           )}
+          {note && <span className="text-ink-quiet">{note}</span>}
         </div>
         <div className="flex items-center gap-2.5">
           <span className="font-mono tabular-nums">{Math.round(scale * 100)}%</span>
