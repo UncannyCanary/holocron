@@ -49,10 +49,13 @@ function summaryLine(documents: DocumentSummary[]): string {
   return `Worst first. ${parts.join(', ')}.`;
 }
 
-// The header and every row share these columns, so they line up. The list
-// scrolls sideways on a narrow window rather than folding its columns.
+// The header and every row share these columns, so they line up. Below sm
+// the type, vendor, date, and total columns drop out and the list reads as
+// a single stacked column, same as the rest-of-queue rows on the landing
+// screen; from sm up it is the full table, scrolling sideways under 1080px
+// rather than folding its columns further.
 const ROW =
-  'grid min-w-[1080px] grid-cols-[14px_minmax(0,1fr)_92px_210px_104px_116px_140px] items-center gap-4 px-4';
+  'grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-3 px-4 sm:min-w-[1080px] sm:grid-cols-[14px_minmax(0,1fr)_92px_210px_104px_116px_140px] sm:gap-4';
 
 function QueuePage() {
   const { data: documents = [], isPending } = useDocuments();
@@ -106,10 +109,10 @@ function QueuePage() {
         <div className={`${ROW} caps h-[34px] border-b border-line`}>
           <span />
           <span>Document</span>
-          <span>Type</span>
-          <span>Vendor or party</span>
-          <span>Date</span>
-          <span className="text-right">Total</span>
+          <span className="hidden sm:block">Type</span>
+          <span className="hidden sm:block">Vendor or party</span>
+          <span className="hidden sm:block">Date</span>
+          <span className="hidden text-right sm:block">Total</span>
           <span className="text-right">Trust</span>
         </div>
 
@@ -173,26 +176,30 @@ function QueueRow({
           {doc.why}
         </div>
       </span>
-      <span className="text-note text-ink-soft">{TYPE_LABELS[doc.type]}</span>
+      <span className="hidden text-note text-ink-soft sm:block">{TYPE_LABELS[doc.type]}</span>
       <span
-        className={`block truncate text-note ${doc.counterparty ? 'text-ink' : 'text-ink-faint'}`}
+        className={`hidden truncate text-note sm:block ${doc.counterparty ? 'text-ink' : 'text-ink-faint'}`}
         title={doc.counterparty ?? undefined}
       >
         {doc.counterparty ?? '—'}
       </span>
       <span
-        className={`font-mono text-note tabular-nums ${doc.date ? 'text-ink' : 'text-ink-faint'}`}
+        className={`hidden font-mono text-note tabular-nums sm:block ${doc.date ? 'text-ink' : 'text-ink-faint'}`}
       >
         {doc.date ?? '—'}
       </span>
       <span
-        className={`text-right font-mono text-note tabular-nums ${doc.total ? 'text-ink' : 'text-ink-faint'}`}
+        className={`hidden text-right font-mono text-note tabular-nums sm:block ${doc.total ? 'text-ink' : 'text-ink-faint'}`}
       >
         {totalText(doc)}
       </span>
       <span className="inline-flex items-center gap-2 justify-self-end">
         <DocumentBadge doc={doc} />
-        {isSelected && <Kbd>⏎</Kbd>}
+        {isSelected && (
+          <span className="hidden sm:inline-flex">
+            <Kbd>⏎</Kbd>
+          </span>
+        )}
       </span>
     </button>
   );
