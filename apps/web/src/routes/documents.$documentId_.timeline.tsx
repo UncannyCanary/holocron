@@ -34,7 +34,8 @@ function TimelineRoute() {
           params={{ documentId }}
           className="text-note no-underline"
         >
-          Back to the review screen
+          <span className="sm:hidden">Back</span>
+          <span className="hidden sm:inline">Back to the review screen</span>
         </Link>
       }
     >
