@@ -41,8 +41,13 @@ const TRUST_OPTIONS: DocumentTrust[] = ['needs-review', 'mostly-verified', 'veri
 const features = tableFeatures({});
 const columnHelper = createColumnHelper<typeof features, DocumentSummary>();
 
+// Below sm the type, vendor, date, total, and added columns drop out (see
+// HIDE_ON_MOBILE) and the table reads as dot, name, trust; from sm up it is
+// every column, scrolling sideways under 1120px rather than folding further.
 const ROW =
-  'grid min-w-[1120px] grid-cols-[14px_minmax(0,1fr)_92px_190px_104px_116px_140px_88px] items-center gap-4 px-4';
+  'grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-3 px-4 sm:min-w-[1120px] sm:grid-cols-[14px_minmax(0,1fr)_92px_190px_104px_116px_140px_88px] sm:gap-4';
+
+const HIDE_ON_MOBILE = new Set(['type', 'vendor', 'date', 'total', 'uploaded']);
 
 const FILTER_TRIGGER =
   'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong bg-card px-2.5 text-note text-ink open:border-ink open:shadow-[0_0_0_3px_rgba(28,25,23,0.08)]';
@@ -269,7 +274,7 @@ function TablePage() {
 
   return (
     <Screen breadcrumb="Table" hints={HINTS}>
-      <div className="flex items-end justify-between px-5 pt-6.5 pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 px-5 pt-6.5 pb-4">
         <div>
           <h1 className="font-serif text-title font-normal">All documents</h1>
           <div className="mt-2 text-note text-ink-soft">
@@ -277,13 +282,18 @@ function TablePage() {
             to someone.
           </div>
         </div>
-        <button type="button" className="btn" onClick={downloadCsv} disabled={sorted.length === 0}>
+        <button
+          type="button"
+          className="btn shrink-0"
+          onClick={downloadCsv}
+          disabled={sorted.length === 0}
+        >
           Download CSV<Kbd>E</Kbd>
         </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5 px-5 pb-4">
-        <div className="flex h-8 w-[300px] items-center gap-2 rounded-md border border-line-strong bg-card px-2.5">
+        <div className="flex h-8 w-full items-center gap-2 rounded-md border border-line-strong bg-card px-2.5 sm:w-[300px]">
           <SearchIcon />
           <input
             ref={searchRef}
@@ -418,7 +428,10 @@ function TablePage() {
           {table.getHeaderGroups().map((group) => (
             <div key={group.id} className={`${ROW} caps h-[34px] border-line border-b`}>
               {group.headers.map((header) => (
-                <span key={header.id}>
+                <span
+                  key={header.id}
+                  className={HIDE_ON_MOBILE.has(header.id) ? 'hidden sm:block' : undefined}
+                >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </span>
               ))}
@@ -456,7 +469,10 @@ function TablePage() {
               }`}
             >
               {row.getAllCells().map((cell) => (
-                <span key={cell.id}>
+                <span
+                  key={cell.id}
+                  className={HIDE_ON_MOBILE.has(cell.column.id) ? 'hidden sm:block' : undefined}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </span>
               ))}
