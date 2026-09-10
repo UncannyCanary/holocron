@@ -29,7 +29,7 @@ export function Screen({
       <title>{breadcrumb ? `Holocron - ${breadcrumb}` : 'Holocron'}</title>
       <TopBar breadcrumb={breadcrumb} actions={actions} />
       <main className={`flex flex-1 flex-col ${fill ? 'min-h-0' : ''}`}>{children}</main>
-      <footer className="flex h-10 flex-none items-center gap-5 border-t border-line bg-hint-bar px-5">
+      <footer className="hidden h-10 flex-none items-center gap-5 border-t border-line bg-hint-bar px-5 sm:flex">
         {hints.map((hint) => (
           <span key={hint.label} className="hint">
             {hint.keys.map((key) => (
