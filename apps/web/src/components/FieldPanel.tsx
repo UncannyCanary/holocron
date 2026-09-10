@@ -21,7 +21,12 @@ const TRUST_LABELS: Record<FieldTrust, string> = {
 // Worst first, so a reviewer reads the trouble before the rest.
 const TRUST_ORDER: FieldTrust[] = ['contradicted', 'unverifiable', 'corrected', 'verified'];
 
-const ROW = 'grid grid-cols-[148px_minmax(0,1fr)_92px] items-start gap-3 px-2 py-[7px]';
+// Below sm the label and badge columns narrow and the badge column becomes
+// auto-sized to its own text (a badge never wraps, so a fixed width for it
+// could overflow), leaving the value column the rest of the room to wrap
+// into. From sm up this is the fixed three-column layout it always was.
+const ROW =
+  'grid grid-cols-[84px_minmax(0,1fr)_auto] items-start gap-2 px-2 py-[7px] sm:grid-cols-[148px_minmax(0,1fr)_92px] sm:gap-3';
 
 // "2 contradicted · 1 unverifiable · 8 verified", counting the values on
 // screen and leaving out the states nothing is in. A value the document
@@ -63,9 +68,9 @@ export function FieldPanel(props: FieldPanelProps) {
   const sorted = [...checks].sort((left, right) => Number(left.passed) - Number(right.passed));
 
   return (
-    <div className="flex min-h-0 flex-col border-l border-line bg-panel">
+    <div className="flex min-h-0 flex-col border-t border-line bg-panel sm:border-t-0 sm:border-l">
       <div className="flex-1 overflow-auto px-4 pt-4.5">
-        <div className="mb-2.5 flex items-baseline justify-between gap-3 px-2">
+        <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-2">
           <span className="font-serif text-[21px]">What the document says</span>
           <span className="text-xs text-ink-quiet">{countsLine(panel.order)}</span>
         </div>
@@ -247,8 +252,10 @@ function FieldValue({
         value={editing.value}
         disabled={saving}
         aria-label={`New value for ${text}`}
-        // An amount needs room for a few digits; a name needs room for a name.
-        className={`${field.currency === null ? 'w-[220px]' : 'w-[104px]'} rounded border-[1.5px] border-link bg-card-raised px-2 py-[3px] font-mono text-sm text-ink outline-none ring-3 ring-link/15`}
+        // An amount needs room for a few digits; a name needs room for a
+        // name. Below sm the value column is too narrow for either fixed
+        // width, so the input just takes what the column has.
+        className={`w-full ${field.currency === null ? 'sm:w-[220px]' : 'sm:w-[104px]'} rounded border-[1.5px] border-link bg-card-raised px-2 py-[3px] font-mono text-sm text-ink outline-none ring-3 ring-link/15`}
         onChange={(event) => onEditValue(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter') {

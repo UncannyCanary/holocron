@@ -167,63 +167,84 @@ function ReviewScreen({ documentId }: { documentId: string }) {
     'g q': () => navigate({ to: '/queue' }),
   });
 
+  // Every control a person needs to move between documents or act on this
+  // one. Shown two ways: inline in the top bar from sm up, where there is
+  // room beside the nav; below sm it would not fit next to the nav at all,
+  // so it moves into its own row under the header instead (see
+  // mobileActions), and only the keyboard hints inside it disappear, since
+  // there is no keyboard to press them on.
+  const actionButtons = (
+    <>
+      {summary && <DocumentBadge doc={summary} />}
+      <Link
+        to="/documents/$documentId/timeline"
+        params={{ documentId }}
+        className="text-note no-underline"
+      >
+        Timeline
+      </Link>
+      <button
+        type="button"
+        className="cursor-pointer text-note text-needs-review"
+        disabled={remove.isPending}
+        onClick={deleteThis}
+      >
+        {remove.isPending ? 'Deleting…' : 'Delete'}
+      </button>
+      {place >= 0 && (
+        <span className="text-xs text-ink-quiet">
+          {place + 1} of {queue.length} in the queue
+        </span>
+      )}
+      <button
+        type="button"
+        className="btn"
+        aria-label="Previous document"
+        disabled={place <= 0}
+        onClick={() => open(queue[place - 1])}
+      >
+        <Arrow back />
+        <span className="hidden sm:inline-flex">
+          <Kbd>K</Kbd>
+        </span>
+      </button>
+      <button
+        type="button"
+        className="btn"
+        aria-label="Next document"
+        disabled={place < 0 || place >= queue.length - 1}
+        onClick={() => open(queue[place + 1])}
+      >
+        <Arrow />
+        <span className="hidden sm:inline-flex">
+          <Kbd>J</Kbd>
+        </span>
+      </button>
+      <button type="button" className="btn btn-primary" onClick={openNextToReview}>
+        Next to review
+        <span className="hidden sm:inline-flex">
+          <Kbd dark>⏎</Kbd>
+        </span>
+      </button>
+    </>
+  );
+
+  const mobileActions = (
+    <div className="flex shrink-0 flex-wrap items-center gap-2.5 border-b border-line px-4 py-2.5 sm:hidden">
+      {actionButtons}
+    </div>
+  );
+
   const frame = {
     breadcrumb: summary?.name ?? 'Document',
     hints: editing === null ? HINTS : EDITING_HINTS,
-    actions: (
-      <>
-        {summary && <DocumentBadge doc={summary} />}
-        <Link
-          to="/documents/$documentId/timeline"
-          params={{ documentId }}
-          className="text-note no-underline"
-        >
-          Timeline
-        </Link>
-        <button
-          type="button"
-          className="cursor-pointer text-note text-needs-review"
-          disabled={remove.isPending}
-          onClick={deleteThis}
-        >
-          {remove.isPending ? 'Deleting…' : 'Delete'}
-        </button>
-        {place >= 0 && (
-          <span className="text-xs text-ink-quiet">
-            {place + 1} of {queue.length} in the queue
-          </span>
-        )}
-        <button
-          type="button"
-          className="btn"
-          aria-label="Previous document"
-          disabled={place <= 0}
-          onClick={() => open(queue[place - 1])}
-        >
-          <Arrow back />
-          <Kbd>K</Kbd>
-        </button>
-        <button
-          type="button"
-          className="btn"
-          aria-label="Next document"
-          disabled={place < 0 || place >= queue.length - 1}
-          onClick={() => open(queue[place + 1])}
-        >
-          <Arrow />
-          <Kbd>J</Kbd>
-        </button>
-        <button type="button" className="btn btn-primary" onClick={openNextToReview}>
-          Next to review
-          <Kbd dark>⏎</Kbd>
-        </button>
-      </>
-    ),
+    actions: <span className="hidden items-center gap-2.5 sm:flex sm:gap-3.5">{actionButtons}</span>,
   };
 
   if (isPending) {
     return (
       <Screen {...frame}>
+        {mobileActions}
         <Note>Loading…</Note>
       </Screen>
     );
@@ -232,6 +253,7 @@ function ReviewScreen({ documentId }: { documentId: string }) {
   if (isError) {
     return (
       <Screen {...frame}>
+        {mobileActions}
         <Note>{messageOf(error, 'This document could not be opened.')}</Note>
       </Screen>
     );
@@ -243,6 +265,7 @@ function ReviewScreen({ documentId }: { documentId: string }) {
   if (doc.status !== 'ready' || doc.pages.length === 0) {
     return (
       <Screen {...frame}>
+        {mobileActions}
         <Note>
           <p>{summary?.why ?? 'This document has not been read yet.'}</p>
           {doc.status === 'failed' && (
@@ -276,10 +299,13 @@ function ReviewScreen({ documentId }: { documentId: string }) {
 
   return (
     <Screen {...frame} fill>
-      {/* Side by side at any width. On a narrow window the pair scrolls
-          sideways, the way the queue's columns do, rather than folding. */}
+      {mobileActions}
+      {/* Below sm the page and its fields stack, the page capped to 45vh so
+          the fields are always in reach without their own scroll fight. From
+          sm up they sit side by side, scrolling sideways under 900px rather
+          than folding further. */}
       <div className="min-h-0 flex-1 overflow-x-auto">
-        <div className="grid h-full min-w-[900px] grid-cols-[minmax(0,1fr)_520px] grid-rows-[minmax(0,1fr)]">
+        <div className="grid h-full grid-cols-1 grid-rows-[45vh_minmax(0,1fr)] sm:min-w-[900px] sm:grid-cols-[minmax(0,1fr)_520px] sm:grid-rows-[minmax(0,1fr)]">
           <PageView
             pages={doc.pages}
             fields={doc.fields}
